@@ -53,13 +53,15 @@ const pizzaLatLng = [36.9737, -122.0263];
 const pizzaMarker = L.marker(pizzaLatLng, { icon: pizzaIcon }).addTo(map);
 
 // Orders and progress
+// game.js  – replace the existing `orders` block
 const orders = [
-  { address: "121 Waugh Ave", pizzas: 2, time: 45, location: [36.975, -122.032] },
-  { address: "55 Front St",   pizzas: 1, time: 30, location: [36.971, -122.026] },
-  { address: "300 Bay St",    pizzas: 3, time: 60, location: [36.972, -122.045] },
-  { address: "45 Mission St", pizzas: 2, time: 50, location: [36.977, -122.039] },
-  { address: "10 Ocean St",   pizzas: 4, time: 60, location: [36.970, -122.022] }
+  { address: "121 Waugh Ave",                     pizzas: 2, time: 45, location: [37.00371,  -121.97777] },
+  { address: "Santa Cruz Beach Boardwalk",        pizzas: 1, time: 30, location: [36.964287, -122.018822] },
+  { address: "Santa Cruz Wharf",                  pizzas: 3, time: 60, location: [36.9615,   -122.0219] },
+  { address: "UCSC",                              pizzas: 2, time: 50, location: [37.00053,  -122.06692] },
+  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60, location: [37.062073, -122.149203] }
 ];
+
 
 let nextOrderIndex = 0;          // which order will ring next
 const activeOrders = [];         // running deliveries
