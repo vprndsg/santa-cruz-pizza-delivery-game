@@ -15,8 +15,8 @@
     <img id="logo" src="images/logo.png" alt="Joby Pizza Delivery Services logo" />
     <!-- Start button pulses to attract attention -->
     <button id="start-btn" class="pulse">Start Game</button>
-    <!-- Looping music for the intro screen. Autoplay ensures the theme starts immediately on page load. -->
-    <audio id="intro-audio" src="audio/intro.mp3" autoplay loop></audio>
+    <!-- Looping music for the intro screen. Use preload so the file is ready, but rely on JS to start playback after a user gesture to satisfy autoplay policies. -->
+    <audio id="intro-audio" src="audio/intro.mp3" loop preload="auto"></audio>
   </div>
 
   <!-- Map container -->
@@ -43,16 +43,33 @@
     document.addEventListener('DOMContentLoaded', () => {
       const startBtn = document.getElementById('start-btn');
       const introMusic = document.getElementById('intro-audio');
-      // In case autoplay is blocked, attempt to play when user interacts
-      introMusic.play().catch(() => {/* ignored */});
+
+      /**
+       * Attempt to play the intro music. If autoplay is blocked by the browser,
+       * the returned promise will reject. We ignore the error here because we
+       * will try again when the user interacts with the page.
+       */
+      function attemptPlay() {
+        introMusic.play().catch(() => {
+          // Autoplay blocked; will try again on next interaction
+        });
+      }
+
+      // Try to autoplay on page load. Some browsers (e.g. Safari) may allow it.
+      attemptPlay();
+
+      // When the user clicks the Start button, ensure the music plays if it
+      // hasn't already started, then reveal the game UI and load the game code.
       startBtn.addEventListener('click', () => {
-        // Stop the intro music when the game starts
-        introMusic.pause();
-        // Hide intro screen and reveal game UI
+        // If music hasn't started yet, try to start it in response to the click.
+        if (introMusic.paused) {
+          attemptPlay();
+        }
+        // Hide the intro screen and show the map and HUD.
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';
-        // Lazy-load the game script to keep initial page lightweight
+        // Lazy‑load the game script to keep the initial page lightweight.
         const script = document.createElement('script');
         script.src = 'game.js';
         document.body.appendChild(script);
