@@ -17,6 +17,8 @@
     <button id="start-btn" class="pulse">Start Game</button>
     <!-- Looping music for the intro screen. Use preload so the file is ready, but rely on JS to start playback after a user gesture to satisfy autoplay policies. -->
     <audio id="intro-audio" src="audio/intro.mp3" loop preload="auto"></audio>
+    <!-- Background music for the game itself. Paused by default; will start on Start button click -->
+    <audio id="game-audio" src="audio/game.mp3" loop preload="auto"></audio>
   </div>
 
   <!-- Map container -->
@@ -58,20 +60,27 @@
       // Try to autoplay on page load. Some browsers (e.g. Safari) may allow it.
       attemptPlay();
 
-      // When the user clicks the Start button we want to ensure the intro music
-      // is playing while the intro screen is visible. The first click starts the
-      // music; the second click begins the game.
+      // When the user clicks the Start button, ensure the music plays if it
+      // hasn't already started, then reveal the game UI and load the game code.
       startBtn.addEventListener('click', () => {
+        // If the intro music isn't playing yet, start it and update the button text.
         if (introMusic.paused) {
-          // Start the music and update the button text to prompt the player to
-          // click again when they're ready to play.
+          // Attempt to start the intro music. If autoplay is blocked this will
+          // reject silently; the user can click again to retry.
           attemptPlay();
+          // Update the button label to indicate the next click will start the game.
           startBtn.textContent = 'Play Game';
           return; // stay on intro screen so the music can be heard
         }
         // Music is already playing, so stop it and proceed to launch the game.
         introMusic.pause();
         introMusic.currentTime = 0;
+        // Start the game background music.
+        const gameAudioElem = document.getElementById('game-audio');
+        if (gameAudioElem && gameAudioElem.paused) {
+          gameAudioElem.play().catch(() => {});
+        }
+        // Hide the intro screen and show the map and HUD.
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';

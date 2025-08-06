@@ -393,7 +393,18 @@ function endGame(win) {
     ? `Delivered all ${orders.length} orders. Great job.`
     : `Time up. You delivered ${deliveredCount} of ${orders.length}.`;
   gameOverContent.innerHTML = msg;
-  gameOverScreen.style.display = 'flex';
+      gameOverScreen.style.display = 'flex';
+
+      // Pause the game background music when the game ends to avoid looping audio after game over.
+      try {
+        const gameAudioElem = document.getElementById('game-audio');
+        if (gameAudioElem && !gameAudioElem.paused) {
+          gameAudioElem.pause();
+          gameAudioElem.currentTime = 0;
+        }
+      } catch (e) {
+        // Swallow errors if the audio element isn't available
+      }
 }
 
 // Start the first ringing phone one second after game load
