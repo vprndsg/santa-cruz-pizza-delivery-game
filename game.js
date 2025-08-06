@@ -51,10 +51,12 @@ let gameOver = false;
 const hud = document.getElementById('hud');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
+gameOverScreen.style.display = 'none';
 
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
 let latestBeta = 0, latestGamma = 0;  // last device tilt angles
+let baselineBeta = null, baselineGamma = null;
 const tiltThreshold = 10;            // minimum tilt (degrees) to move
 const moveSpeed = 0.00005;           // movement step per frame (approx ~0.00005° per frame)
 
@@ -73,8 +75,14 @@ window.addEventListener('click', function enableOrientation() {
 window.addEventListener('deviceorientation', (e) => {
   // e.beta: front-back tilt (-180 to 180), e.gamma: left-right tilt (-90 to 90)
   if (e.beta !== null && e.gamma !== null) {
-    latestBeta = e.beta;
-    latestGamma = e.gamma;
+    // Calibrate on first reading
+    if (baselineBeta === null) {
+      baselineBeta = e.beta;
+      baselineGamma = e.gamma;
+    }
+    // Adjust so controls are relative to initial orientation
+    latestBeta = e.beta - baselineBeta;
+    latestGamma = e.gamma - baselineGamma;
   }
 });
 

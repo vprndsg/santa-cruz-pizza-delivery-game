@@ -40,10 +40,6 @@ html, body {
   justify-content: center;
   font-family: sans-serif;
 }
-/* Use flexbox to center game-over text */
-#game-over {
-  display: flex;
-}
 #game-over-content {
   max-width: 80%;
   font-size: 32px;
