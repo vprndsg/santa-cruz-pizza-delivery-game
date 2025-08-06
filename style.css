@@ -4,6 +4,8 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background: #000;
+  font-family: "Hack", monospace;
 }
 #map {
   width: 100%;
