@@ -71,6 +71,8 @@ const turtleMarkers  = [];
 
 // Tail markers for carried pizzas
 const tailMarkers = [];
+const heliTrail = [];
+const TAIL_SPACING = 10;
 
 // Game state
 let carryingCount = 0;
@@ -289,6 +291,17 @@ function gameLoop() {
     helicopterMarker.setLatLng([heliLat, heliLng]);
     map.setView([heliLat, heliLng]);
   }
+
+  heliTrail.push([heliLat, heliLng]);
+  const maxTrail = tailMarkers.length * TAIL_SPACING + 1;
+  if (heliTrail.length > maxTrail) {
+    heliTrail.splice(0, heliTrail.length - maxTrail);
+  }
+  tailMarkers.forEach((m, i) => {
+    const idx = heliTrail.length - (i + 1) * TAIL_SPACING - 1;
+    const pos = heliTrail[idx] || [heliLat, heliLng];
+    m.setLatLng(pos);
+  });
 
   const heliLatLng = helicopterMarker.getLatLng();
   // inside gameLoop after helicopter position update
