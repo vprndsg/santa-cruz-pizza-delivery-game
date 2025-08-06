@@ -21,6 +21,9 @@
   <!-- Heads-up display for score and time -->
   <div id="hud" style="display:none;">Deliveries: 0/10 | Time: 60</div>
 
+  <!-- Phone icon for incoming orders -->
+  <div id="phone-icon" style="display:none; position:absolute; top:60px; right:10px; font-size:40px; cursor:pointer; z-index:1000;">📞</div>
+
   <!-- Final game-over screen (hidden by default) -->
   <div id="game-over">
     <div id="game-over-content"></div>
@@ -28,6 +31,7 @@
 
   <!-- Leaflet JS library -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="leaflet.edgebuffer.js"></script>
 
     <script>
 (() => {
