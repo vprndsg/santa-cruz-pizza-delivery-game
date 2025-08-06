@@ -82,9 +82,10 @@ gameOverScreen.style.display = 'none';
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
 let latestBeta = 0, latestGamma = 0;
+let smoothedBeta = 0, smoothedGamma = 0;
 let baselineBeta = null, baselineGamma = null;
-const tiltThreshold = 10;
-const baseSpeed = 0.00005;
+const tiltThreshold = 15;
+const baseSpeed = 0.000046; // 8% slower
 
 // Orientation permission (iOS)
 window.addEventListener('click', function enableOrientation() {
@@ -105,6 +106,9 @@ window.addEventListener('deviceorientation', (e) => {
     }
     latestBeta = e.beta - baselineBeta;
     latestGamma = e.gamma - baselineGamma;
+    // simple smoothing to reduce jitter
+    smoothedBeta = smoothedBeta * 0.8 + latestBeta * 0.2;
+    smoothedGamma = smoothedGamma * 0.8 + latestGamma * 0.2;
   }
 });
 
@@ -259,13 +263,13 @@ function gameLoop() {
   if (rightPressed) moveLng += baseSpeed * speedMultiplier;
   if (leftPressed) moveLng -= baseSpeed * speedMultiplier;
   // Device tilt
-  if (Math.abs(latestBeta) > tiltThreshold) {
-    if (latestBeta > tiltThreshold) moveLat += baseSpeed * speedMultiplier;
-    else if (latestBeta < -tiltThreshold) moveLat -= baseSpeed * speedMultiplier;
+  if (Math.abs(smoothedBeta) > tiltThreshold) {
+    const betaFactor = Math.max(-1, Math.min(1, smoothedBeta / 45));
+    moveLat += baseSpeed * speedMultiplier * betaFactor;
   }
-  if (Math.abs(latestGamma) > tiltThreshold) {
-    if (latestGamma > tiltThreshold) moveLng += baseSpeed * speedMultiplier;
-    else if (latestGamma < -tiltThreshold) moveLng -= baseSpeed * speedMultiplier;
+  if (Math.abs(smoothedGamma) > tiltThreshold) {
+    const gammaFactor = Math.max(-1, Math.min(1, smoothedGamma / 45));
+    moveLng += baseSpeed * speedMultiplier * gammaFactor;
   }
 
   if (moveLat !== 0 || moveLng !== 0) {
