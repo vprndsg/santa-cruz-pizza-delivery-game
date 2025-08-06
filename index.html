@@ -10,9 +10,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Intro screen with logo and music -->
   <div id="intro">
-    <canvas id="screen"></canvas>
-    <button id="start-btn">Start Game</button>
+    <img id="logo" src="images/logo.png" alt="Joby Pizza Delivery Services logo" />
+    <!-- Start button pulses to attract attention -->
+    <button id="start-btn" class="pulse">Start Game</button>
+    <!-- Looping music for the intro screen. Autoplay ensures the theme starts immediately on page load. -->
+    <audio id="intro-audio" src="audio/intro.mp3" autoplay loop></audio>
   </div>
 
   <!-- Map container -->
@@ -33,139 +37,27 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="leaflet.edgebuffer.js"></script>
 
-    <script>
-(() => {
-/*--- settings ---*/
-const glyphs      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*(){}[]=+";
-const revealDelay = 2000;   /* milliseconds before the portrait begins */
-const revealSteps = 30;     /* frames needed to lock each symbol */
-const rainSpeed   = 30;     /* shorter delay between rain frames = faster fall */
-
-/* ASCII portrait (120 × 40) + speech box */
-const faceArt = [
-"                                         ..  .  .. .   ..        .               .                                      ",
-"                                     .................................................                                  ",
-"                                     ...........:.:..::......:::......:...::....:.....                                  ",
-"                                     .........::::::::::::::::::::::::::....:::::.....                                  ",
-"                                  .  . ....:..:::::::::::::::::::::::::::::::::::.:...                                  ",
-"                                  .........:::::::::::::::::::::::::::::::::::-:::....                                  ",
-"                                 ....:::::..:::::::::::::::::::::::::::::::---::::....                                  ",
-"                                ..::::-----:.:::-:-:::::::::::::::::::::-:::::::::::::..                                ",
-"                                .....::-----::.:::-:--:.:--:-::::::------::.:---:--::::.                                ",
-"                                       .::-----::.:----::------::----:::::-----::... ..                                 ",
-"                                          ..::-:::::::::.-----::-::--:::--:-::.        .                                ",
-"                                              ....::..:..:::::.::.:::--::.                                               ",
-"                                                  ..:::. .:.... ..:...                 ..                                ",
-"                                                                                      ...                                ",
-"                              .....        ..             .              .....     ...:::                                ",
-"                               .::::.   ..               :::--.               .....:--:..  .                            ",
-"                               ..:--::.......        .   :-:-:.  .        ....:::::---:.  .                             ",
-"                                ..::--:::...  .:  ..... .::---. ..::::.  ....:::----::.                                  ",
-"                                 .....::.....:....::...::::-::  ..::::::......::::::..                                   ",
-"                                   .. ......::.:::.. ...::::-:.:....::::::::. ..:...                                     ",
-"                                       .....:::::. .:. .:::-:::: ..  .:::::::....                                        ",
-"                                        ...::::.. .:-:..:::-::::.:::  ..:::::::.      .                                  ",
-"                                        ...:::.    .:::.:::---:.:-::.   .:::::..                                         ",
-"                                        ...::.  ..     .:::-:::::.   :.  .::::.                                          ",
-"                                         :::. .:::.      ..:::.     .:::.  .::.                                          ",
-"                                        .... .:::::.              .:::::::  ....                                         ",
-"                                        ..  ::::......          ...::::::::. .:.                                         ",
-"                                        .. .:..........        ........ ...:. ..                                         ",
-"                                        .....                      ...    ......                                         ",
-"                                         ..                     .. ..       ...                                          ",
-"                                               ................:...::..... ..                                            ",
-"                                            ..                      .....  .                                             ",
-"                                                                                                                         ",
-"                                                    ...:::::::......  .. .                                               ",
-"                                                  ......::::::.::::..:...                                                ",
-"                                                  .....................                                                  ",
-"                                                     .    . .. .  ...                                                    ",
-"                                                                ..                                                       ",
-"                                                                                                                         ",
-"                                                                                                                         ",
-"+----------------------------------------------------------------------------------------------------------------------+",
-"|                             hahahahah…no birthday party until you deliver those pizzas!                              |",
-"+----------------------------------------------------------------------------------------------------------------------+"
-];
-
-/*--- setup ---*/
-const cv   = document.getElementById('screen');
-const ctx  = cv.getContext('2d');
-resize();
-addEventListener('resize', resize);
-
-const cols  = Math.floor(cv.width  / 10);
-const rows  = Math.floor(cv.height / 16);
-const drops = Array(cols).fill(0);                       // y position of each falling column
-const buf   = Array.from({length: rows}, () => Array(cols).fill(' '));
-const t0    = performance.now();
-
-/*--- loop ---*/
-function loop(){
-  const now = performance.now();
-  const elapsed = now - t0;
-
-  rainFrame();
-  if(elapsed > revealDelay){
-    const p = Math.min(1, (elapsed - revealDelay)/(revealSteps*rainSpeed));
-    revealFace(p);
-  }
-  draw();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-/* rain update */
-function rainFrame(){
-  ctx.fillStyle = "rgba(0,0,0,0.05)";
-  ctx.fillRect(0,0,cv.width,cv.height);
-  for(let c=0;c<cols;c++){
-    const ch = glyphs[Math.random()*glyphs.length|0];
-    const r  = drops[c];
-    if(r<rows) buf[r][c]=ch;
-    drops[c]=(r+1)%rows;
-  }
-}
-
-/* portrait reveal */
-function revealFace(progress){
-  const h = faceArt.length, w = faceArt[0].length;
-  const top  = Math.floor((rows-h)/2);
-  const left = Math.floor((cols-w)/2);
-  for(let y=0;y<h;y++){
-    const row = faceArt[y];
-    for(let x=0;x<w;x++){
-      const ch = row[x];
-      if(ch!== ' ' && Math.random()<progress){
-        const ry = top+y, cx = left+x;
-        if(ry>=0&&ry<rows&&cx>=0&&cx<cols) buf[ry][cx]=ch;
-      }
-    }
-  }
-}
-
-/* draw buffer */
-function draw(){
-  ctx.font = "16px Hack,monospace";
-  ctx.textBaseline = "top";
-  ctx.fillStyle="#0f0";
-  for(let r=0;r<rows;r++) ctx.fillText(buf[r].join(""),0,r*16);
-}
-
-/* resize canvas */
-function resize(){
-  cv.width  = innerWidth;
-  cv.height = innerHeight;
-}
-})();
-    document.getElementById('start-btn').addEventListener('click', () => {
+  <!-- Simple script to handle the start button and audio -->
+  <script>
+    // Once the DOM is loaded, attach the start handler
+    document.addEventListener('DOMContentLoaded', () => {
+      const startBtn = document.getElementById('start-btn');
+      const introMusic = document.getElementById('intro-audio');
+      // In case autoplay is blocked, attempt to play when user interacts
+      introMusic.play().catch(() => {/* ignored */});
+      startBtn.addEventListener('click', () => {
+        // Stop the intro music when the game starts
+        introMusic.pause();
+        // Hide intro screen and reveal game UI
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';
+        // Lazy-load the game script to keep initial page lightweight
         const script = document.createElement('script');
         script.src = 'game.js';
         document.body.appendChild(script);
+      });
     });
-    </script>
+  </script>
 </body>
 </html>
