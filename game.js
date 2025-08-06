@@ -1,5 +1,16 @@
-// Initialize map centered on Santa Cruz, California
-const map = L.map('map', { keyboard: false }).setView([36.974, -122.030], 14);
+// Initialize map centered on Santa Cruz, California with fixed zoom and no user zooming/panning
+const fixedZoom = 18;
+const map = L.map('map', {
+  keyboard: false,
+  dragging: false,
+  touchZoom: false,
+  scrollWheelZoom: false,
+  doubleClickZoom: false,
+  boxZoom: false,
+  zoomControl: false,
+  minZoom: fixedZoom,
+  maxZoom: fixedZoom
+}).setView([36.974, -122.030], fixedZoom);
 // Add OpenStreetMap tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
