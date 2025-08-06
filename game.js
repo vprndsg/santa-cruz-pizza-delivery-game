@@ -38,8 +38,8 @@ const heliIcon = L.icon({
 const pizzaIcon = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [90, 90] });
 const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
 const houseIcon = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [90, 90] });
-const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [30, 30] });
-const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [30, 30] });
+const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [60, 60] });
+const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [60, 60] });
 
 // Tap detection radii (icon half-size plus 10px buffer)
 const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
@@ -183,15 +183,22 @@ function startOrder(idx) {
   // Battery and turtle placed along route
   const [shopLat, shopLng] = pizzaLatLng;
   const [destLat, destLng] = cfg.location;
-  const bLat = shopLat + (destLat - shopLat) * 0.33;
-  const bLng = shopLng + (destLng - shopLng) * 0.33;
-  const tLat = shopLat + (destLat - shopLat) * 0.66;
-  const tLng = shopLng + (destLng - shopLng) * 0.66;
 
-  const battery = L.marker([bLat, bLng], { icon: batteryIcon }).addTo(map);
-  const turtle  = L.marker([tLat, tLng], { icon: turtleIcon }).addTo(map);
-  batteryMarkers.push(battery);
-  turtleMarkers.push(turtle);
+  // multiple batteries for more frequent boosts
+  [0.25, 0.5].forEach(f => {
+    const lat = shopLat + (destLat - shopLat) * f;
+    const lng = shopLng + (destLng - shopLng) * f;
+    const battery = L.marker([lat, lng], { icon: batteryIcon }).addTo(map);
+    batteryMarkers.push(battery);
+  });
+
+  // multiple turtles for more frequent slowdowns
+  [0.7, 0.9].forEach(f => {
+    const lat = shopLat + (destLat - shopLat) * f;
+    const lng = shopLng + (destLng - shopLng) * f;
+    const turtle = L.marker([lat, lng], { icon: turtleIcon }).addTo(map);
+    turtleMarkers.push(turtle);
+  });
 
   // Order object with its own timer
   const order = {

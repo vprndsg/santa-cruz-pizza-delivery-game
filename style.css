@@ -66,6 +66,16 @@ html, body {
   font-size: 24px;
 }
 
+/* Power-up (battery) and penalty (turtle) icons */
+.battery-icon, .turtle-icon {
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid #000;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 60px;
+  font-size: 48px;
+}
+
 /* Intro screen */
 #intro {
   position: absolute;
