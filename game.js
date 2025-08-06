@@ -1,6 +1,9 @@
 /* Santa Cruz Pizza Delivery Game - multiple overlapping orders */
 
 const fixedZoom = 18;
+// Start right next to the pizzeria
+const startLat = 36.9737;
+const startLng = -122.0265;
 const map = L.map('map', {
   keyboard: false,
   dragging: false,
@@ -11,7 +14,7 @@ const map = L.map('map', {
   zoomControl: false,
   minZoom: fixedZoom,
   maxZoom: fixedZoom
-}).setView([36.974, -122.030], fixedZoom);
+}).setView([startLat, startLng], fixedZoom);
 
 // Tile layer with keepBuffer and EdgeBuffer
 const tileLayer = L.tileLayer(
@@ -29,16 +32,21 @@ const tileLayer = L.tileLayer(
 // Icons
 const heliIcon = L.icon({
   iconUrl: 'IMG_3540.png',
-  iconSize: [80, 80],
-  iconAnchor: [40, 40]
+  iconSize: [120, 120],
+  iconAnchor: [60, 60]
 });
-const pizzaIcon = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [30, 30] });
-const houseIcon = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [30, 30] });
+const pizzaIcon = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [90, 90] });
+const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
+const houseIcon = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [90, 90] });
 const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [30, 30] });
 const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [30, 30] });
 
+// Tap detection radii (icon half-size plus 10px buffer)
+const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
+const HOUSE_TAP_RADIUS = houseIcon.options.iconSize[0] / 2 + 10;
+
 // Starting markers
-let heliLat = 36.974, heliLng = -122.030;
+let heliLat = startLat, heliLng = startLng;
 const helicopterMarker = L.marker([heliLat, heliLng], { icon: heliIcon }).addTo(map);
 
 const pizzaLatLng = [36.9737, -122.0263];
@@ -213,26 +221,28 @@ function startOrder(idx) {
 }
 
 // Pickup and delivery iterate through activeOrders
-map.on('click', () => {
+map.on('click', (e) => {
   if (gameOver) return;
   const here = helicopterMarker.getLatLng();
+  const clickPoint = map.latLngToLayerPoint(e.latlng);
 
-  // Pickup at shop
-  if (here.distanceTo(pizzaMarker.getLatLng()) < 50) {
+  // Pickup at shop when tapping near the pizzeria
+  const pizzaPoint = map.latLngToLayerPoint(pizzaMarker.getLatLng());
+  if (clickPoint.distanceTo(pizzaPoint) <= PIZZA_TAP_RADIUS) {
     if (carryingCount < 4) {
       carryingCount++;
       if (carryingCount === 1) lastPickupTime = Date.now();
-      const tail = L.marker(here, { icon: pizzaIcon }).addTo(map);
+      const tail = L.marker(here, { icon: tailPizzaIcon }).addTo(map);
       tailMarkers.push(tail);
     }
     return;
   }
 
-  // Delivery: check each active order
+  // Delivery: check each active order and tap near house
   for (let i = activeOrders.length - 1; i >= 0; i--) {
     const order = activeOrders[i];
-    if (here.distanceTo(order.house.getLatLng()) < 50 && carryingCount >= order.pizzasNeeded) {
-      // Deliver
+    const housePoint = map.latLngToLayerPoint(order.house.getLatLng());
+    if (clickPoint.distanceTo(housePoint) <= HOUSE_TAP_RADIUS && carryingCount >= order.pizzasNeeded) {
       carryingCount -= order.pizzasNeeded;
       for (let p = 0; p < order.pizzasNeeded; p++) tailMarkers.pop().remove();
 
