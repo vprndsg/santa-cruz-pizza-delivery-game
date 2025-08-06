@@ -116,6 +116,7 @@ let lastPickupTime = 0;
 // HUD and UI elements
 const hud = document.getElementById('hud');
 const phoneIcon = document.getElementById('phone-icon');
+const phoneMessage = document.getElementById('phone-message');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
@@ -174,7 +175,6 @@ window.addEventListener('keyup', (e) => {
 
 // Phone ring, vibration and overlapping call schedule
 let phoneRinging = false;
-let vibrateInterval = null;
 
 function ringPhone() {
   if (nextOrderIndex >= orders.length || phoneRinging || gameOver) return;
@@ -183,18 +183,18 @@ function ringPhone() {
   phoneIcon.style.display = 'block';
   phoneRinging = true;
 
-  // Try to vibrate once every second while phone is ringing
   if (navigator.vibrate) {
     navigator.vibrate([200, 100, 200]);
-    vibrateInterval = setInterval(() => navigator.vibrate([200]), 1000);
   }
+
+  // Automatically answer the call after a brief delay
+  setTimeout(answerPhone, 1000);
 }
 
-phoneIcon.addEventListener('click', () => {
+function answerPhone() {
   if (!phoneRinging) return;
 
-  // Stop vibration
-  if (vibrateInterval) { clearInterval(vibrateInterval); vibrateInterval = null; navigator.vibrate(0); }
+  if (navigator.vibrate) navigator.vibrate(0);
   phoneIcon.style.display = 'none';
   phoneRinging = false;
 
@@ -204,7 +204,9 @@ phoneIcon.addEventListener('click', () => {
 
   // Schedule the next ring after 15 s, even if current order still runs
   setTimeout(ringPhone, 15000);
-});
+}
+
+phoneIcon.addEventListener('click', answerPhone);
 
 // Create and track each order
 function startOrder(idx) {
@@ -249,18 +251,11 @@ function startOrder(idx) {
     if (order.timeLeft <= 0) endGame(false);
   }, 1000);
 
-  // Video-call popup
-  const popup = document.createElement('div');
-  Object.assign(popup.style, {
-    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-    background: 'rgba(0,0,0,0.8)', color: '#fff', padding: '10px 20px', borderRadius: '8px',
-    zIndex: 2000, textAlign: 'center'
-  });
+  // Update the persistent phone message at the top-right
   const pizzaWord = cfg.pizzas === 1 ? "pizza" : "pizzas";
   const callLine  = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
-  popup.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
-  document.body.appendChild(popup);
-  setTimeout(() => popup.remove(), 3000);
+  phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
+  phoneMessage.style.display = 'block';
 
   updateHUD();
 }
