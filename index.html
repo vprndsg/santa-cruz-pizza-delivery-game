@@ -10,12 +10,16 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="intro">
+    <canvas id="screen"></canvas>
+    <button id="start-btn">Start Game</button>
+  </div>
 
   <!-- Map container -->
-  <div id="map"></div>
+  <div id="map" style="display:none;"></div>
 
   <!-- Heads-up display for score and time -->
-  <div id="hud">Deliveries: 0/10 | Time: 60</div>
+  <div id="hud" style="display:none;">Deliveries: 0/10 | Time: 60</div>
 
   <!-- Final game-over screen (hidden by default) -->
   <div id="game-over">
@@ -24,7 +28,115 @@
 
   <!-- Leaflet JS library -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- Game JS -->
-  <script src="game.js"></script>
+
+  <script>
+  (function () {
+      /* ---------- configuration ---------- */
+      const revealDelay   = 5500;        // ms before the face begins to appear
+      const revealSteps   = 60;          // frames over which each character snaps into place
+      const rainSpeed     = 40;          // ms between rain frames
+      const glyphs        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*(){}[]=+";
+      const faceArt = [
+"                     _____________                     ",
+"                    /             \\                    ",
+"                   |  >:)          |                   ",
+"                   |  _____        |                   ",
+"                   | /     \\       |                   ",
+"                   | | O O |       |                   ",
+"                   | |  ^  |       |                   ",
+"                   | | '_' |       |                   ",
+"                   | \\_____/       |                   ",
+"                   |      |        |                   ",
+"                   |     / \\       |                   ",
+"                   |    /___\\      |                   ",
+"                    \\_____________/                    ",
+" +--------------------------------------------------------------+",
+" | hahahahah…no birthday party until you deliver those pizzas!  |",
+" +--------------------------------------------------------------+"
+      ];
+      /* ---------- setup ---------- */
+      const canvas  = document.getElementById('screen');
+      const ctx     = canvas.getContext('2d');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      const cols    = Math.floor(canvas.width / 10);
+      const rows    = Math.floor(canvas.height / 16);
+      const drops   = Array(cols).fill(0);
+      const matrix  = Array.from({length: rows}, () => Array(cols).fill(' '));
+
+      const start   = performance.now();
+
+      /* ---------- main loop ---------- */
+      function loop() {
+          const now = performance.now();
+          const elapsed = now - start;
+          if (elapsed < revealDelay) {
+              rainFrame();
+          } else {
+              const step = Math.min(1, (elapsed - revealDelay) / (revealSteps * rainSpeed));
+              rainFrame();
+              revealFace(step);
+          }
+          render();
+          requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      /* ---------- functions ---------- */
+      function rainFrame() {
+          ctx.fillStyle = "rgba(0,0,0,0.05)";
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+
+          for (let c = 0; c < cols; c++) {
+              const char = glyphs[Math.floor(Math.random() * glyphs.length)];
+              const r = drops[c];
+              if (r < rows) matrix[r][c] = char;
+              drops[c] = (r + 1) % rows;
+          }
+      }
+
+      function revealFace(t) {
+          const top = Math.floor((rows - faceArt.length) / 2);
+          const left = Math.floor((cols - faceArt[0].length) / 2);
+          faceArt.forEach((line, i) => {
+              for (let j = 0; j < line.length; j++) {
+                  const finalChar = line[j];
+                  if (finalChar !== ' ') {
+                      if (Math.random() < t) {
+                          if (matrix[top + i] && matrix[top + i][left + j] !== undefined) {
+                              matrix[top + i][left + j] = finalChar;
+                          }
+                      }
+                  }
+              }
+          });
+      }
+
+      function render() {
+          ctx.font = "16px Hack, monospace";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = "#0f0";
+          for (let r = 0; r < rows; r++) {
+              const line = matrix[r].join('');
+              ctx.fillText(line, 0, r * 16);
+          }
+      }
+
+      function resizeCanvas() {
+          canvas.width  = window.innerWidth;
+          canvas.height = window.innerHeight;
+      }
+  })();
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+      document.getElementById('intro').style.display = 'none';
+      document.getElementById('map').style.display = 'block';
+      document.getElementById('hud').style.display = 'block';
+      const script = document.createElement('script');
+      script.src = 'game.js';
+      document.body.appendChild(script);
+  });
+  </script>
 </body>
 </html>
