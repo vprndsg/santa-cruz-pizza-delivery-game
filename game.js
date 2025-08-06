@@ -10,6 +10,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Use a custom image for the helicopter instead of the default emoji
 const heliIcon = L.icon({
   iconUrl: 'IMG_3540.png',
+
   // helicopter icon sized to 100x100 pixels for consistent display
   iconSize: [100, 100]
 });
