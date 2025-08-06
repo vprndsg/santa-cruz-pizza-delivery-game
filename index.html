@@ -58,14 +58,20 @@
       // Try to autoplay on page load. Some browsers (e.g. Safari) may allow it.
       attemptPlay();
 
-      // When the user clicks the Start button, ensure the music plays if it
-      // hasn't already started, then reveal the game UI and load the game code.
+      // When the user clicks the Start button we want to ensure the intro music
+      // is playing while the intro screen is visible. The first click starts the
+      // music; the second click begins the game.
       startBtn.addEventListener('click', () => {
-        // If music hasn't started yet, try to start it in response to the click.
         if (introMusic.paused) {
+          // Start the music and update the button text to prompt the player to
+          // click again when they're ready to play.
           attemptPlay();
+          startBtn.textContent = 'Play Game';
+          return; // stay on intro screen so the music can be heard
         }
-        // Hide the intro screen and show the map and HUD.
+        // Music is already playing, so stop it and proceed to launch the game.
+        introMusic.pause();
+        introMusic.currentTime = 0;
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';
