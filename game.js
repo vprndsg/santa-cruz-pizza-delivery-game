@@ -53,13 +53,42 @@ const pizzaLatLng = [36.9737, -122.0263];
 const pizzaMarker = L.marker(pizzaLatLng, { icon: pizzaIcon }).addTo(map);
 
 // Orders and progress
-// game.js  – replace the existing `orders` block
 const orders = [
-  { address: "121 Waugh Ave",                     pizzas: 2, time: 45, location: [37.00533, -121.97485] },
-  { address: "Santa Cruz Beach Boardwalk",        pizzas: 1, time: 30, location: [36.964287, -122.018822] },
-  { address: "Santa Cruz Wharf",                  pizzas: 3, time: 60, location: [36.9615,   -122.0219] },
-  { address: "UCSC",                              pizzas: 2, time: 50, location: [37.00053,  -122.06692] },
-  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60, location: [37.02310,   -122.09021] }
+  {
+    address: "121 Waugh Ave",
+    pizzas: 2, time: 45,
+    location: [37.00371, -121.97777],
+    caller: "Mister Manager", emoji: "🐶",
+    msg: "Woof woof! I need {p} pizzas now!"
+  },
+  {
+    address: "Santa Cruz Beach Boardwalk",
+    pizzas: 1, time: 30,
+    location: [36.964287, -122.018822],
+    caller: "Paige", emoji: "🎢",
+    msg: "Mark! I need {p} pizza at the Boardwalk!"
+  },
+  {
+    address: "Santa Cruz Wharf",
+    pizzas: 3, time: 60,
+    location: [36.9615, -122.0219],
+    caller: "Otter 841", emoji: "🦦",
+    msg: "Bro, I need {p} pizzas — ASAP!"
+  },
+  {
+    address: "UCSC",
+    pizzas: 2, time: 50,
+    location: [37.00053, -122.06692],
+    caller: "Stoner college kid", emoji: "🧑‍🎓",
+    msg: "Dude, I’ve got the munchies—bring me {p} pizzas."
+  },
+  {
+    address: "Beauregard Vineyards Tasting Room",
+    pizzas: 4, time: 60,
+    location: [37.062073, -122.149203],
+    caller: "JoBen", emoji: "🍷",
+    msg: "Mark, get {p} pizzas here or you might not have a job tomorrow."
+  }
 ];
 
 
@@ -228,7 +257,8 @@ function startOrder(idx) {
     zIndex: 2000, textAlign: 'center'
   });
   const pizzaWord = cfg.pizzas === 1 ? "pizza" : "pizzas";
-  popup.innerHTML = `🐶 <strong>Fido:</strong> I need ${cfg.pizzas} ${pizzaWord} at ${cfg.address} now!`;
+  const callLine  = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
+  popup.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
   document.body.appendChild(popup);
   setTimeout(() => popup.remove(), 3000);
 
