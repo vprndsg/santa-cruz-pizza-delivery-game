@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Santa Cruz Pizza Delivery Game</title>
+  <!-- Leaflet CSS (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Game CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <!-- Heads-up display for score and time -->
+  <div id="hud">Deliveries: 0/10 | Time: 60</div>
+
+  <!-- Final game-over screen (hidden by default) -->
+  <div id="game-over">
+    <div id="game-over-content"></div>
+  </div>
+
+  <!-- Leaflet JS library -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Game JS -->
+  <script src="game.js"></script>
+</body>
+</html>
