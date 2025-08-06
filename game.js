@@ -55,11 +55,11 @@ const pizzaMarker = L.marker(pizzaLatLng, { icon: pizzaIcon }).addTo(map);
 // Orders and progress
 // game.js  – replace the existing `orders` block
 const orders = [
-  { address: "121 Waugh Ave",                     pizzas: 2, time: 45, location: [37.00371,  -121.97777] },
+  { address: "121 Waugh Ave",                     pizzas: 2, time: 45, location: [37.00533, -121.97485] },
   { address: "Santa Cruz Beach Boardwalk",        pizzas: 1, time: 30, location: [36.964287, -122.018822] },
   { address: "Santa Cruz Wharf",                  pizzas: 3, time: 60, location: [36.9615,   -122.0219] },
   { address: "UCSC",                              pizzas: 2, time: 50, location: [37.00053,  -122.06692] },
-  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60, location: [37.062073, -122.149203] }
+  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60, location: [37.02310,   -122.09021] }
 ];
 
 
