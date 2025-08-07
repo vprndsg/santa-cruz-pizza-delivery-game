@@ -1,84 +1,146 @@
-<!-- index.html (excerpt) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Santa Cruz Pizza Delivery Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Main stylesheet for retro styles -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet CSS & JS for the game map (ensure these are included for the map to work) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" crossorigin="anonymous"></script>
+</head>
 <body>
-  <!-- Intro screen with logo, then story, then game -->
+  <!-- Intro Screen Overlay -->
   <div id="intro">
-    <!-- Phase 1: Logo + Start button -->
-    <img id="logo" src="images/logo.png" alt="Joby Pizza Delivery Services logo">
+    <!-- Phase 1: Retro Logo and Start Button -->
+    <img id="logo" src="images/logo.png" alt="Game Logo" />
     <button id="start-btn" class="pulse">Start Game</button>
-
-    <!-- Phase 2: Boss portrait + story (hidden at first) -->
-    <div id="intro-content" style="display:none; flex-direction:row; align-items:center;">
-      <img id="boss-img" src="images/boss.png" alt="Boss portrait" style="width:200px; image-rendering:pixelated; margin-right:20px;">
-      <div id="story-text" style="font-family:'Hack',monospace; font-size:18px; border-left:2px solid #fff; padding-left:20px;"></div>
+    <!-- Phase 2: Boss Portrait and Story Text (hidden until Start is clicked) -->
+    <div id="intro-content">
+      <img id="boss-img" src="images/boss.png" alt="Boss portrait" />
+      <div id="story-text"><!-- Story sentences will be injected here --></div>
     </div>
-
-    <!-- Audio -->
+    <!-- Intro and Game background audio -->
     <audio id="intro-audio" src="audio/intro.mp3" loop preload="auto"></audio>
     <audio id="game-audio"  src="audio/game.mp3"  loop preload="auto"></audio>
   </div>
 
-  <!-- (rest of your page: map, HUD, compass, etc.) -->
+  <!-- Game Map and UI Overlays (hidden until game starts) -->
+  <div id="map"><!-- Leaflet map renders here --></div>
+  <div id="hud"><!-- HUD status info (e.g., deliveries, timers) --></div>
+  <div id="compass">
+    <div id="pizza-arrow"></div>
+    <div id="house-arrow"></div>
+  </div>
+  <div id="phone-message"><!-- Phone call text --></div>
+  <img id="phone-icon" src="images/phone.png" alt="Ringing phone icon" />
 
+  <!-- Game Over Screen (hidden until the game ends) -->
+  <div id="game-over">
+    <div id="game-over-content"><!-- End game message --></div>
+  </div>
+
+  <!-- Intro Sequence Script and Game Loader -->
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const startBtn     = document.getElementById('start-btn');
-    const logo         = document.getElementById('logo');
-    const introContent = document.getElementById('intro-content');
-    const storyEl      = document.getElementById('story-text');
-    const introAudio   = document.getElementById('intro-audio');
-    const gameAudio    = document.getElementById('game-audio');
+    document.addEventListener('DOMContentLoaded', () => {
+      const startBtn     = document.getElementById('start-btn');
+      const logo         = document.getElementById('logo');
+      const introContent = document.getElementById('intro-content');
+      const storyEl      = document.getElementById('story-text');
+      const introAudio   = document.getElementById('intro-audio');
+      const gameAudio    = document.getElementById('game-audio');
 
-    const story = `Mark, this is JoeBen. Sorry buddy I know it's your birthday and you have a party to get to, but ya' know....we really gotta finish quota before you go home. Make 5 more deliveries and you'll be good to go. Thanks bunches.....by the way, quick reminder if you forgot how to fly. Push the screen the direction you want to go. Pick up pizzas at the Pizzeria before you fly off. You can only hold up to 5 pizzas at a time so come back when you need more. Orders come in via the phone, you can follow the compass to get you in the right direction. Thanks again for the "world's best boss" mug.`;
+      // Story script broken into short sentences for teleprompter effect.
+      // Important keywords are bolded for emphasis.
+      const storySentences = [
+        "Mark, this is JoeBen.",
+        "Sorry buddy, I know it's your birthday and you have a party to get to.",
+        "But ya know... we really gotta finish the quota before you go home.",
+        "Make <b>5 more deliveries</b> and you'll be good to go.",
+        "Thanks a bunch... By the way, quick reminder if you forgot how to fly:",
+        "<b>Push the screen</b> the direction you want to go.",
+        "Pick up pizzas at the <b>Pizzeria</b> before you fly off.",
+        "You can only hold up to <b>5 pizzas</b> at a time, so come back when you need more.",
+        "Orders come in via the <b>phone</b>. You can follow the <b>compass</b> to get in the right direction.",
+        "Thanks again for the 'world's best boss' mug!"
+      ];
 
-    let phase     = 0;   // 0 = show logo, 1 = story, 2 = start game
-    let charIndex = 0;
-    let typing    = false;
+      let phase = 0;               // 0 = Logo screen, 1 = Story screen, 2 = Game started
+      let sentenceIndex = 0;       // tracks which sentence to show next
+      let storyInterval = null;    // interval timer for story text
 
-    function typeNextChar() {
-      if (charIndex < story.length) {
-        storyEl.textContent += story[charIndex++];
-        setTimeout(typeNextChar, 40);
-      }
-    }
-
-    function tryPlayIntro() {
-      introAudio.play().catch(()=>{});
-    }
-
-    // warm up autoplay
-    tryPlayIntro();
-
-    startBtn.addEventListener('click', () => {
-      if (phase === 0) {
-        // switch to story
-        phase = 1;
-        logo.style.display         = 'none';
-        introContent.style.display = 'flex';
-        startBtn.textContent       = 'Play Game';
-        tryPlayIntro();
-        if (!typing) {
-          typing = true;
-          typeNextChar();
+      // Display the next sentence in the intro story box
+      function showNextSentence() {
+        if (sentenceIndex < storySentences.length) {
+          const p = document.createElement('p');
+          p.innerHTML = storySentences[sentenceIndex++];
+          storyEl.appendChild(p);
+        } else {
+          // All sentences have been displayed; stop the interval
+          clearInterval(storyInterval);
+          storyInterval = null;
         }
-        return;
       }
 
-      if (phase === 1) {
-        // go to actual game
-        phase = 2;
-        introAudio.pause();
-        introAudio.currentTime = 0;
-        gameAudio.play().catch(()=>{});
-        document.getElementById('intro').style.display = 'none';
-        document.getElementById('map').style.display   = 'block';
-        document.getElementById('hud').style.display   = 'block';
-        document.getElementById('compass').style.display = 'block';
-        const script = document.createElement('script');
-        script.src = 'game.js';
-        document.body.appendChild(script);
+      // Attempt to play intro music (will actually play once user interacts)
+      function tryPlayIntro() {
+        introAudio.play().catch(() => { /* Audio may not play until user clicks */ });
       }
+
+      // Kick off intro music in the background (browser will play after interaction)
+      tryPlayIntro();
+
+      // Handle Start button clicks for phase transitions
+      startBtn.addEventListener('click', () => {
+        if (phase === 0) {
+          // PHASE 1 -> PHASE 2: Show story intro
+          phase = 1;
+          startBtn.textContent = 'Play Game';
+          // Fade out logo and fade in the story content + boss image
+          logo.style.transition = 'opacity 0.5s';
+          introContent.style.transition = 'opacity 0.5s';
+          logo.style.opacity = '0';
+          setTimeout(() => {
+            logo.style.display = 'none';
+            introContent.style.display = 'flex';
+            introContent.style.opacity = '0';
+            // Fade in the story/boss container
+            setTimeout(() => { introContent.style.opacity = '1'; }, 50);
+          }, 500);
+          // Start (or continue) intro music
+          tryPlayIntro();
+          // Begin teleprompter text: show sentences one by one every 2.5 seconds
+          if (!storyInterval) {
+            showNextSentence();  // show first line immediately
+            storyInterval = setInterval(showNextSentence, 2500);
+          }
+          return;
+        }
+        if (phase === 1) {
+          // PHASE 2 -> GAME START: Launch the game
+          phase = 2;
+          // Stop story timer if still running
+          if (storyInterval) {
+            clearInterval(storyInterval);
+            storyInterval = null;
+          }
+          // Switch music tracks: stop intro, play game loop
+          introAudio.pause();
+          introAudio.currentTime = 0;
+          gameAudio.play().catch(() => {});
+          // Hide intro overlay and display game UI elements
+          document.getElementById('intro').style.display   = 'none';
+          document.getElementById('map').style.display     = 'block';
+          document.getElementById('hud').style.display     = 'block';
+          document.getElementById('compass').style.display = 'block';
+          // Load and start the main game script
+          const script = document.createElement('script');
+          script.src = 'game.js';
+          document.body.appendChild(script);
+        }
+      });
     });
-  });
   </script>
 </body>
 </html>
