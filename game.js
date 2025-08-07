@@ -117,9 +117,34 @@ let lastPickupTime = 0;
 const hud = document.getElementById('hud');
 const phoneIcon = document.getElementById('phone-icon');
 const phoneMessage = document.getElementById('phone-message');
+const pizzaArrow = document.getElementById('pizza-arrow');
+const houseArrow = document.getElementById('house-arrow');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
+
+// Compass calculations
+function angleTo(lat, lng) {
+  const here = helicopterMarker.getLatLng();
+  const dy = lat - here.lat;
+  const dx = lng - here.lng;
+  return Math.atan2(dx, dy) * 180 / Math.PI;
+}
+
+function updateCompass() {
+  const [pLat, pLng] = pizzaLatLng;
+  const pizzaAngle = angleTo(pLat, pLng);
+  pizzaArrow.style.transform = `translateX(-50%) rotate(${pizzaAngle}deg)`;
+
+  if (activeOrders.length > 0) {
+    const h = activeOrders[0].house.getLatLng();
+    const houseAngle = angleTo(h.lat, h.lng);
+    houseArrow.style.transform = `translateX(-50%) rotate(${houseAngle}deg)`;
+    houseArrow.style.display = 'block';
+  } else {
+    houseArrow.style.display = 'none';
+  }
+}
 
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
@@ -357,6 +382,8 @@ function gameLoop() {
       speedTimeout = setTimeout(() => speedMultiplier = 1, 5000);
     }
   });
+
+  updateCompass();
 
   requestAnimationFrame(gameLoop);
 }
