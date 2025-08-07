@@ -10,9 +10,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Intro screen with logo and music -->
+  <!-- Intro screen with logo, story and music -->
   <div id="intro">
     <img id="logo" src="images/logo.png" alt="Joby Pizza Delivery Services logo" />
+    <div id="intro-content">
+      <img id="boss-img" src="images/boss.png" alt="Boss portrait" />
+      <div id="story-text"></div>
+    </div>
     <!-- Start button pulses to attract attention -->
     <button id="start-btn" class="pulse">Start Game</button>
     <!-- Looping music for the intro screen. Use preload so the file is ready, but rely on JS to start playback after a user gesture to satisfy autoplay policies. -->
@@ -46,53 +50,58 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="leaflet.edgebuffer.js"></script>
 
-  <!-- Simple script to handle the start button and audio -->
+  <!-- Script for intro typewriter effect and starting the game -->
   <script>
-    // Once the DOM is loaded, attach the start handler
     document.addEventListener('DOMContentLoaded', () => {
       const startBtn = document.getElementById('start-btn');
       const introMusic = document.getElementById('intro-audio');
+      const storyEl = document.getElementById('story-text');
+      const logo = document.getElementById('logo');
+      const introContent = document.getElementById('intro-content');
 
-      /**
-       * Attempt to play the intro music. If autoplay is blocked by the browser,
-       * the returned promise will reject. We ignore the error here because we
-       * will try again when the user interacts with the page.
-       */
-      function attemptPlay() {
-        introMusic.play().catch(() => {
-          // Autoplay blocked; will try again on next interaction
-        });
+      const story = `Mark, this is JoeBen. Sorry buddy I know it's your birthday and you have a party to get to, but ya' know....we really gotta finish quota before you go home. Make 5 more deliveries and you'll be good to go. Thanks bunches.....by the way, quick reminder if you forgot how to fly. Push the screen the direction you want to go. Pick up pizzas at the Pizzeria before you fly off. You can only hold up to 5 pizzas at a time so come back when you need more. Orders come in via the phone, you can follow the compass to get you in the right direction. Thanks again for the "world's best boss" mug.`;
+
+      let charIndex = 0;
+      let typing = false;
+      let introShown = false;
+
+      function typeNextChar() {
+        if (charIndex < story.length) {
+          storyEl.textContent += story[charIndex++];
+          setTimeout(typeNextChar, 40);
+        }
       }
 
-      // Try to autoplay on page load. Some browsers (e.g. Safari) may allow it.
+      function attemptPlay() {
+        introMusic.play().catch(() => {});
+      }
+
       attemptPlay();
 
-      // When the user clicks the Start button, ensure the music plays if it
-      // hasn't already started, then reveal the game UI and load the game code.
       startBtn.addEventListener('click', () => {
-        // If the intro music isn't playing yet, start it and update the button text.
-        if (introMusic.paused) {
-          // Attempt to start the intro music. If autoplay is blocked this will
-          // reject silently; the user can click again to retry.
+        if (!introShown) {
           attemptPlay();
-          // Update the button label to indicate the next click will start the game.
           startBtn.textContent = 'Play Game';
-          return; // stay on intro screen so the music can be heard
+          logo.style.display = 'none';
+          introContent.style.display = 'flex';
+          if (!typing) {
+            typing = true;
+            typeNextChar();
+          }
+          introShown = true;
+          return;
         }
-        // Music is already playing, so stop it and proceed to launch the game.
+
         introMusic.pause();
         introMusic.currentTime = 0;
-        // Start the game background music.
         const gameAudioElem = document.getElementById('game-audio');
         if (gameAudioElem && gameAudioElem.paused) {
           gameAudioElem.play().catch(() => {});
         }
-        // Hide the intro screen and show the map and HUD.
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';
         document.getElementById('compass').style.display = 'block';
-        // Lazy‑load the game script to keep the initial page lightweight.
         const script = document.createElement('script');
         script.src = 'game.js';
         document.body.appendChild(script);
