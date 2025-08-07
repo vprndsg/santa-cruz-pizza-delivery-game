@@ -123,36 +123,11 @@ gameOverScreen.style.display = 'none';
 
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
-let latestBeta = 0, latestGamma = 0;
-let smoothedBeta = 0, smoothedGamma = 0;
-let baselineBeta = null, baselineGamma = null;
-const tiltThreshold = 15;
+let touchStartX = null, touchStartY = null;
+let touchDeltaX = 0, touchDeltaY = 0;
+let touchActive = false;
+const touchThreshold = 20;
 const baseSpeed = 0.000046; // 8% slower
-
-// Orientation permission (iOS)
-window.addEventListener('click', function enableOrientation() {
-  if (DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission().catch(() => {
-      console.warn('Device orientation permission denied or not requested.');
-    });
-  }
-  window.removeEventListener('click', enableOrientation);
-});
-
-// Device orientation controls
-window.addEventListener('deviceorientation', (e) => {
-  if (e.beta !== null && e.gamma !== null) {
-    if (baselineBeta === null) {
-      baselineBeta = e.beta;
-      baselineGamma = e.gamma;
-    }
-    latestBeta = e.beta - baselineBeta;
-    latestGamma = e.gamma - baselineGamma;
-    // simple smoothing to reduce jitter
-    smoothedBeta = smoothedBeta * 0.8 + latestBeta * 0.2;
-    smoothedGamma = smoothedGamma * 0.8 + latestGamma * 0.2;
-  }
-});
 
 // Keyboard controls
 window.addEventListener('keydown', (e) => {
@@ -172,6 +147,31 @@ window.addEventListener('keyup', (e) => {
     case "ArrowRight": rightPressed = false; e.preventDefault(); break;
   }
 });
+
+// Touch controls
+const mapContainer = map.getContainer();
+mapContainer.addEventListener('pointerdown', (e) => {
+  if (gameOver) return;
+  touchActive = true;
+  touchStartX = e.clientX;
+  touchStartY = e.clientY;
+  touchDeltaX = 0;
+  touchDeltaY = 0;
+  e.preventDefault();
+});
+mapContainer.addEventListener('pointermove', (e) => {
+  if (!touchActive) return;
+  touchDeltaX = e.clientX - touchStartX;
+  touchDeltaY = e.clientY - touchStartY;
+  e.preventDefault();
+});
+function endTouch() {
+  touchActive = false;
+  touchDeltaX = 0;
+  touchDeltaY = 0;
+}
+mapContainer.addEventListener('pointerup', endTouch);
+mapContainer.addEventListener('pointercancel', endTouch);
 
 // Phone ring, vibration and overlapping call schedule
 let phoneRinging = false;
@@ -308,14 +308,16 @@ function gameLoop() {
   if (downPressed) moveLat -= baseSpeed * speedMultiplier;
   if (rightPressed) moveLng += baseSpeed * speedMultiplier;
   if (leftPressed) moveLng -= baseSpeed * speedMultiplier;
-  // Device tilt
-  if (Math.abs(smoothedBeta) > tiltThreshold) {
-    const betaFactor = Math.max(-1, Math.min(1, smoothedBeta / 45));
-    moveLat += baseSpeed * speedMultiplier * betaFactor;
-  }
-  if (Math.abs(smoothedGamma) > tiltThreshold) {
-    const gammaFactor = Math.max(-1, Math.min(1, smoothedGamma / 45));
-    moveLng += baseSpeed * speedMultiplier * gammaFactor;
+  // Touch drag
+  if (touchActive) {
+    if (Math.abs(touchDeltaY) > touchThreshold) {
+      const dyFactor = Math.max(-1, Math.min(1, -touchDeltaY / 100));
+      moveLat += baseSpeed * speedMultiplier * dyFactor;
+    }
+    if (Math.abs(touchDeltaX) > touchThreshold) {
+      const dxFactor = Math.max(-1, Math.min(1, touchDeltaX / 100));
+      moveLng += baseSpeed * speedMultiplier * dxFactor;
+    }
   }
 
   if (moveLat !== 0 || moveLng !== 0) {
