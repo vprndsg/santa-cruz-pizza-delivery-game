@@ -1,4 +1,17 @@
-/* Intro screen (logo → story) */
+/* Reset and base styles for full-screen layout */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+}
+body {
+  font-family: "Hack", monospace;
+  color: #fff;
+  overflow: hidden;
+}
+
+/* Intro screen overlay (covers the whole viewport) */
 #intro {
   position: absolute;
   top: 0; left: 0;
@@ -8,47 +21,17 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 3000; /* above game and HUD */
+  z-index: 3000;  /* render above game UI */
 }
 
-/* Logo (phase 0) */
+/* Game logo in intro (pixelated for retro effect) */
 #logo {
   max-width: 80%;
   max-height: 60vh;
   image-rendering: pixelated;
 }
 
-/* Story container (phase 1, hidden until click) */
-#intro-content {
-  display: none;           /* toggle to flex on click */
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  color: #fff;
-  font-family: "Hack", monospace;
-  max-width: 90%;
-}
-
-/* Boss portrait */
-#boss-img {
-  width: 200px;
-  height: auto;
-  image-rendering: pixelated;
-  margin-right: 20px;
-}
-
-/* Teleprompter text */
-#story-text {
-  flex: 1;
-  font-size: 18px;
-  line-height: 1.4;
-  border-left: 2px solid #fff;
-  padding-left: 20px;
-  min-height: 150px;
-}
-
-/* Pulsing Start button */
+/* Pulsing Start Game button (Phase 1) */
 #start-btn {
   margin: 20px;
   padding: 12px 28px;
@@ -67,5 +50,117 @@
   100% { transform: scale(1); }
 }
 
-/* …rest of your other rules… */
+/* Story intro content (Phase 2) */
+#intro-content {
+  display: none;               /* shown after first click */
+  flex-direction: row;
+  align-items: flex-start;     /* top-align portrait and text */
+  justify-content: center;
+  padding: 20px;
+  max-width: 90%;
+  color: #fff;
+  font-family: "Hack", monospace;
+}
+#boss-img {
+  width: 200px;
+  image-rendering: pixelated;
+  margin-right: 20px;
+}
+#story-text {
+  flex: 1;
+  font-size: 18px;
+  line-height: 1.4;
+  border-left: 2px solid #fff;
+  padding-left: 20px;
+  min-height: 150px;  /* reserve space for text */
+}
 
+/* Map container (hidden until game start) */
+#map {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: none;
+}
+
+/* Heads-up display (HUD) for deliveries and timers */
+#hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-family: "Hack", monospace;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 4px 8px;
+  border: 2px solid #fff;
+  display: none;
+}
+
+/* Compass arrows (points to pizzeria and current delivery) */
+#compass {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  display: none;
+}
+/* Arrow indicators for compass (default pointing up/north) */
+#pizza-arrow, #house-arrow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  /* triangle arrow shape pointing up */
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 20px solid #fff;
+  /* The arrow will be rotated via JS to point towards targets */
+}
+#house-arrow {
+  border-bottom-color: #f00;  /* house delivery arrow colored red to distinguish it */
+}
+
+/* Phone call UI elements */
+#phone-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 48px;
+  image-rendering: pixelated;
+  cursor: pointer;
+  display: none;              /* shown when the phone is ringing */
+}
+#phone-message {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: "Hack", monospace;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 4px 8px;
+  border: 2px solid #fff;
+  display: none;              /* shown after answering a call (order details) */
+}
+
+/* Game Over overlay (full-screen, shown at end of game) */
+#game-over {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-family: "Hack", monospace;
+  font-size: 24px;
+  text-align: center;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;  /* above all other elements */
+}
+#game-over-content {
+  max-width: 80%;
+}
