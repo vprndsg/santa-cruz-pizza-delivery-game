@@ -27,6 +27,12 @@
   <!-- Heads-up display for score and time -->
   <div id="hud" style="display:none;">Deliveries: 0/10 | Time: 60</div>
 
+  <!-- Compass with arrows to pizzeria and current house -->
+  <div id="compass" style="display:none;">
+    <div id="pizza-arrow" class="arrow"></div>
+    <div id="house-arrow" class="arrow"></div>
+  </div>
+
   <!-- Phone icon for incoming orders -->
   <div id="phone-icon" style="display:none; position:absolute; top:60px; right:10px; font-size:40px; cursor:pointer; z-index:1000;">📞</div>
   <div id="phone-message" style="display:none; position:absolute; top:60px; right:60px; z-index:1000; background:rgba(0,0,0,0.8); color:#fff; padding:5px 10px; border-radius:8px; font-size:16px;"></div>
@@ -85,6 +91,7 @@
         document.getElementById('intro').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         document.getElementById('hud').style.display = 'block';
+        document.getElementById('compass').style.display = 'block';
         // Lazy‑load the game script to keep the initial page lightweight.
         const script = document.createElement('script');
         script.src = 'game.js';

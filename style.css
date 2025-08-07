@@ -26,6 +26,36 @@ html, body {
   color: #000;
 }
 
+/* Compass container */
+#compass {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #000;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+#compass .arrow {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 30px solid;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+}
+
+#pizza-arrow { border-bottom-color: red; }
+#house-arrow { border-bottom-color: black; }
+
 /* Game-over overlay */
 #game-over {
   position: absolute;
