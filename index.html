@@ -72,6 +72,8 @@
       // Display the next sentence in the intro story box
       function showNextSentence() {
         if (sentenceIndex < storySentences.length) {
+          // Replace previous content so the box doesn't keep growing
+          storyEl.innerHTML = '';
           const p = document.createElement('p');
           p.innerHTML = storySentences[sentenceIndex++];
           storyEl.appendChild(p);
