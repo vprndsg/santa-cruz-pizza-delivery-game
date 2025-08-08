@@ -31,13 +31,13 @@ const tileLayer = L.tileLayer(
 
 // Icons (helicopter, pizza, house, battery, turtle)
 const heliIcon   = L.icon({ iconUrl: 'images/helicopter.png', iconSize: [120, 120], iconAnchor: [60, 60] });
-// Increase the size of the pizzeria pizza icon (5x larger)
-const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [450, 450] });
+// Increase the size of the pizzeria pizza icon (larger than original, but scaled down from previous increase)
+const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [315, 315] });
 const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
-// Make house, battery, and turtle icons significantly larger for better visibility
-const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [450, 450] });
-const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [300, 300] });
-const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [300, 300] });
+// Make house, battery, and turtle icons larger (scaled down slightly from previous)
+const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [315, 315] });
+const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [210, 210] });
+const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [210, 210] });
 
 // Tap detection radii for pickup/delivery (icon half-size + buffer)
 const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
@@ -106,24 +106,29 @@ const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
 
 // Compass direction calculation
-function angleTo(lat, lng) {
+// Calculate true bearing (degrees clockwise from north) from the helicopter to a target
+function bearingTo(lat, lng) {
   const here = helicopterMarker.getLatLng();
-  const dy = lat - here.lat;
-  const dx = lng - here.lng;
-  return Math.atan2(dx, dy) * 180 / Math.PI;
+  const φ1 = here.lat * Math.PI / 180;
+  const φ2 = lat       * Math.PI / 180;
+  const Δλ = (lng - here.lng) * Math.PI / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+  return (θ * 180 / Math.PI + 360) % 360;
 }
 
 function updateCompass() {
   // point pizza arrow toward pizzeria
   const [pLat, pLng] = pizzaLatLng;
-  const pizzaAngle = angleTo(pLat, pLng);
-  pizzaArrow.style.transform = `translateX(-50%) rotate(${pizzaAngle}deg)`;
+  const pizzaBearing = bearingTo(pLat, pLng);
+  pizzaArrow.style.transform = `translate(-50%, -65%) rotate(${pizzaBearing}deg)`;
 
   // point house arrow toward first active order’s house (if any)
   if (activeOrders.length > 0) {
     const hLatLng = activeOrders[0].house.getLatLng();
-    const houseAngle = angleTo(hLatLng.lat, hLatLng.lng);
-    houseArrow.style.transform = `translateX(-50%) rotate(${houseAngle}deg)`;
+    const houseBearing = bearingTo(hLatLng.lat, hLatLng.lng);
+    houseArrow.style.transform = `translate(-50%, -65%) rotate(${houseBearing}deg)`;
     houseArrow.style.display = 'block';
   } else {
     houseArrow.style.display = 'none';

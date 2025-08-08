@@ -102,34 +102,42 @@ body {
   z-index: 2000;
 }
 
-/* Compass arrows (points to pizzeria and current delivery) */
+/* Compass container positioned bottom-right with a circular background */
 #compass {
   position: absolute;
-  top: 10px;
-  left: 0;
-  width: 100%;
+  bottom: 12px;
+  right: 12px;
+  width: 64px;
+  height: 64px;
+  display: none;          /* set to block when the game starts */
   pointer-events: none;
-  display: none;
-  /* Bring compass above map layers */
   z-index: 2000;
 }
-/* Arrow indicators for compass (default pointing up/north) */
+#compass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Arrow indicators centred in the compass; default pointing north */
 #pizza-arrow, #house-arrow {
   position: absolute;
-  top: 0;
   left: 50%;
-  /* triangle arrow shape pointing up */
+  top: 50%;
   width: 0;
   height: 0;
-  border-left: 15px solid transparent;
-  border-right: 15px solid transparent;
-  border-bottom: 20px solid #fff;
-  /* The arrow will be rotated via JS to point towards targets */
-  /* Ensure arrows appear above the map on mobile */
-  z-index: 2000;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 24px solid #fff;
+  transform-origin: 50% 80%;
+  transform: translate(-50%, -65%) rotate(0deg);
+  z-index: 2001;
 }
 #house-arrow {
-  border-bottom-color: #f00;  /* house delivery arrow colored red to distinguish it */
+  border-bottom-color: #f44;  /* delivery arrow coloured red */
 }
 
 /* Phone call UI elements */
@@ -196,6 +204,7 @@ body {
 .battery-icon,
 .turtle-icon {
   /* Large font to fill the div container for the emoji icons */
-  font-size: 200px;
+  /* Slightly reduce font-size after enlarging icons (approx. 30% smaller) */
+  font-size: 140px;
   line-height: 1;
 }
