@@ -125,6 +125,8 @@ body {
   border-right: 15px solid transparent;
   border-bottom: 20px solid #fff;
   /* The arrow will be rotated via JS to point towards targets */
+  /* Ensure arrows appear above the map on mobile */
+  z-index: 2000;
 }
 #house-arrow {
   border-bottom-color: #f00;  /* house delivery arrow colored red to distinguish it */
@@ -144,7 +146,8 @@ body {
 }
 #phone-message {
   position: absolute;
-  top: 10px;
+  /* Position phone messages slightly lower so they don't overlap the HUD/compass */
+  top: 60px;
   right: 10px;
   font-family: "Hack", monospace;
   font-size: 16px;
@@ -185,4 +188,14 @@ body {
   #phone-message {
     font-size: 14px;
   }
+}
+
+/* Increase the size of map icons (pizza, house, battery, turtle) */
+.pizza-icon,
+.house-icon,
+.battery-icon,
+.turtle-icon {
+  /* Large font to fill the div container for the emoji icons */
+  font-size: 200px;
+  line-height: 1;
 }

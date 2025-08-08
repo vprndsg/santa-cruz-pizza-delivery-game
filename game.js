@@ -31,11 +31,13 @@ const tileLayer = L.tileLayer(
 
 // Icons (helicopter, pizza, house, battery, turtle)
 const heliIcon   = L.icon({ iconUrl: 'images/helicopter.png', iconSize: [120, 120], iconAnchor: [60, 60] });
-const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [90, 90] });
+// Increase the size of the pizzeria pizza icon (5x larger)
+const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [450, 450] });
 const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
-const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [90, 90] });
-const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [60, 60] });
-const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [60, 60] });
+// Make house, battery, and turtle icons significantly larger for better visibility
+const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [450, 450] });
+const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [300, 300] });
+const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [300, 300] });
 
 // Tap detection radii for pickup/delivery (icon half-size + buffer)
 const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
