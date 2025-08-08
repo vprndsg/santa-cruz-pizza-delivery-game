@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Main stylesheet for retro styles -->
   <link rel="stylesheet" href="style.css" />
-  <!-- Leaflet CSS & JS for the game map (ensure these are included for the map to work) -->
+  <!-- Leaflet CSS & JS for the game map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" crossorigin="anonymous" />
   <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" crossorigin="anonymous"></script>
 </head>
@@ -16,7 +16,7 @@
     <!-- Phase 1: Retro Logo and Start Button -->
     <img id="logo" src="images/logo.png" alt="Game Logo" />
     <button id="start-btn" class="pulse">Start Game</button>
-    <!-- Phase 2: Boss Portrait and Story Text (hidden until Start is clicked) -->
+    <!-- Phase 2: Boss Portrait and Story Text (shown after Start is clicked) -->
     <div id="intro-content">
       <img id="boss-img" src="images/boss.png" alt="Boss portrait" />
       <div id="story-text"><!-- Story sentences will be injected here --></div>
@@ -52,7 +52,6 @@
       const gameAudio    = document.getElementById('game-audio');
 
       // Story script broken into short sentences for teleprompter effect.
-      // Important keywords are bolded for emphasis.
       const storySentences = [
         "Mark, this is JoeBen.",
         "Sorry buddy, I know it's your birthday and you have a party to get to.",
@@ -67,7 +66,7 @@
       ];
 
       let phase = 0;               // 0 = Logo screen, 1 = Story screen, 2 = Game started
-      let sentenceIndex = 0;       // tracks which sentence to show next
+      let sentenceIndex = 0;       // which sentence to show next
       let storyInterval = null;    // interval timer for story text
 
       // Display the next sentence in the intro story box
@@ -77,7 +76,7 @@
           p.innerHTML = storySentences[sentenceIndex++];
           storyEl.appendChild(p);
         } else {
-          // All sentences have been displayed; stop the interval
+          // All sentences displayed; stop the interval
           clearInterval(storyInterval);
           storyInterval = null;
         }
@@ -88,7 +87,7 @@
         introAudio.play().catch(() => { /* Audio may not play until user clicks */ });
       }
 
-      // Kick off intro music in the background (browser will play after interaction)
+      // Start intro music (browser will actually play after first interaction)
       tryPlayIntro();
 
       // Handle Start button clicks for phase transitions
@@ -97,7 +96,7 @@
           // PHASE 1 -> PHASE 2: Show story intro
           phase = 1;
           startBtn.textContent = 'Play Game';
-          // Fade out logo and fade in the story content + boss image
+          // Fade out logo, fade in story content + boss image
           logo.style.transition = 'opacity 0.5s';
           introContent.style.transition = 'opacity 0.5s';
           logo.style.opacity = '0';
@@ -108,7 +107,7 @@
             // Fade in the story/boss container
             setTimeout(() => { introContent.style.opacity = '1'; }, 50);
           }, 500);
-          // Start (or continue) intro music
+          // Continue intro music if not already playing
           tryPlayIntro();
           // Begin teleprompter text: show sentences one by one every 2.5 seconds
           if (!storyInterval) {

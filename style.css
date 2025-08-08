@@ -143,6 +143,10 @@ body {
   background: rgba(0, 0, 0, 0.7);
   padding: 4px 8px;
   border: 2px solid #fff;
+  max-width: 80%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
   display: none;              /* shown after answering a call (order details) */
 }
 
@@ -163,4 +167,11 @@ body {
 }
 #game-over-content {
   max-width: 80%;
+}
+
+/* Responsive adjustments for mobile (phone message text) */
+@media (max-width: 480px) {
+  #phone-message {
+    font-size: 14px;
+  }
 }

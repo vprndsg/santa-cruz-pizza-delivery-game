@@ -1,4 +1,4 @@
-/* Santa Cruz Pizza Delivery Game - multiple overlapping orders */
+/* Santa Cruz Pizza Delivery Game – restored full functionality */
 
 const fixedZoom = 18;
 // Start right next to the pizzeria
@@ -16,102 +16,82 @@ const map = L.map('map', {
   maxZoom: fixedZoom
 }).setView([startLat, startLng], fixedZoom);
 
-// Tile layer with keepBuffer and EdgeBuffer
+// Tile layer for the map background
 const tileLayer = L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   {
     maxZoom: 18,
     keepBuffer: 6,        // keep six extra tile rings in memory
-    edgeBufferTiles: 3,   // prefetch three more rings ahead of view
+    edgeBufferTiles: 3,   // prefetch three rings ahead of view
     updateWhenIdle: false,
     reuseTiles: true,
     crossOrigin: true
   }
 ).addTo(map);
 
-// Icons
-const heliIcon = L.icon({
-  iconUrl: 'IMG_3540.png',
-  iconSize: [120, 120],
-  iconAnchor: [60, 60]
-});
-const pizzaIcon = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [90, 90] });
+// Icons (helicopter, pizza, house, battery, turtle)
+const heliIcon   = L.icon({ iconUrl: 'images/helicopter.png', iconSize: [120, 120], iconAnchor: [60, 60] });
+const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [90, 90] });
 const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
-const houseIcon = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [90, 90] });
+const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [90, 90] });
 const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [60, 60] });
 const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [60, 60] });
 
-// Tap detection radii (icon half-size plus 10px buffer)
+// Tap detection radii for pickup/delivery (icon half-size + buffer)
 const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
 const HOUSE_TAP_RADIUS = houseIcon.options.iconSize[0] / 2 + 10;
 
-// Starting markers
+// Starting markers on the map
 let heliLat = startLat, heliLng = startLng;
 const helicopterMarker = L.marker([heliLat, heliLng], { icon: heliIcon }).addTo(map);
-
 const pizzaLatLng = [36.9737, -122.0263];
 const pizzaMarker = L.marker(pizzaLatLng, { icon: pizzaIcon }).addTo(map);
 
-// Orders and progress
+// **Important**: fix map display if it was hidden during init
+map.invalidateSize();
+
+// Orders and progress data
 const orders = [
-  {
-    address: "121 Waugh Ave",
-    pizzas: 2, time: 45,
+  { address: "121 Waugh Ave", pizzas: 2, time: 45,
     location: [37.00371, -121.97777],
     caller: "Mister Manager", emoji: "🐶",
-    msg: "Woof woof! I need {p} pizzas now!"
-  },
-  {
-    address: "Santa Cruz Beach Boardwalk",
-    pizzas: 1, time: 30,
+    msg: "Woof woof! I need {p} pizzas now!" },
+  { address: "Santa Cruz Beach Boardwalk", pizzas: 1, time: 30,
     location: [36.964287, -122.018822],
     caller: "Paige", emoji: "🎢",
-    msg: "Mark! I need {p} pizza at the Boardwalk!"
-  },
-  {
-    address: "Santa Cruz Wharf",
-    pizzas: 3, time: 60,
+    msg: "Mark! I need {p} pizza at the Boardwalk!" },
+  { address: "Santa Cruz Wharf", pizzas: 3, time: 60,
     location: [36.9615, -122.0219],
     caller: "Otter 841", emoji: "🦦",
-    msg: "Bro, I need {p} pizzas — ASAP!"
-  },
-  {
-    address: "UCSC",
-    pizzas: 2, time: 50,
+    msg: "Bro, I need {p} pizzas — ASAP!" },
+  { address: "UCSC", pizzas: 2, time: 50,
     location: [37.00053, -122.06692],
     caller: "Stoner college kid", emoji: "🧑‍🎓",
-    msg: "Dude, I’ve got the munchies—bring me {p} pizzas."
-  },
-  {
-    address: "Beauregard Vineyards Tasting Room",
-    pizzas: 4, time: 60,
+    msg: "Dude, I’ve got the munchies—bring me {p} pizzas." },
+  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60,
     location: [37.062073, -122.149203],
     caller: "JoBen", emoji: "🍷",
-    msg: "Mark, get {p} pizzas here or you might not have a job tomorrow."
-  }
+    msg: "Mark, get {p} pizzas here or you might not have a job tomorrow." }
 ];
 
-
-let nextOrderIndex = 0;          // which order will ring next
-const activeOrders = [];         // running deliveries
-let deliveredCount = 0;
+let nextOrderIndex = 0;        // which order will ring next
+const activeOrders = [];       // currently active delivery orders
+let deliveredCount = 0;        // count of delivered orders
 
 // Per-order helper arrays
 const batteryMarkers = [];
 const turtleMarkers  = [];
 
-// Tail markers for carried pizzas
+// Tail markers for carried pizzas (one per pizza in helicopter)
 const tailMarkers = [];
 const heliTrail = [];
-const TAIL_SPACING = 10;
+const TAIL_SPACING = 10;  // spacing of tail markers behind heli
 
-// Game state
+// Game state tracking
 let carryingCount = 0;
 let gameOver = false;
 let speedMultiplier = 1;
-let speedTimeout = null;
-let spoilInterval = null;
-let lastPickupTime = 0;
+let speedTimeout = null;   // timeout ID for speed boost/slow reset
 
 // HUD and UI elements
 const hud = document.getElementById('hud');
@@ -123,7 +103,7 @@ const gameOverScreen = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
 
-// Compass calculations
+// Compass direction calculation
 function angleTo(lat, lng) {
   const here = helicopterMarker.getLatLng();
   const dy = lat - here.lat;
@@ -132,13 +112,15 @@ function angleTo(lat, lng) {
 }
 
 function updateCompass() {
+  // point pizza arrow toward pizzeria
   const [pLat, pLng] = pizzaLatLng;
   const pizzaAngle = angleTo(pLat, pLng);
   pizzaArrow.style.transform = `translateX(-50%) rotate(${pizzaAngle}deg)`;
 
+  // point house arrow toward first active order’s house (if any)
   if (activeOrders.length > 0) {
-    const h = activeOrders[0].house.getLatLng();
-    const houseAngle = angleTo(h.lat, h.lng);
+    const hLatLng = activeOrders[0].house.getLatLng();
+    const houseAngle = angleTo(hLatLng.lat, hLatLng.lng);
     houseArrow.style.transform = `translateX(-50%) rotate(${houseAngle}deg)`;
     houseArrow.style.display = 'block';
   } else {
@@ -152,7 +134,7 @@ let touchStartX = null, touchStartY = null;
 let touchDeltaX = 0, touchDeltaY = 0;
 let touchActive = false;
 const touchThreshold = 20;
-const baseSpeed = 0.000046; // 8% slower
+const baseSpeed = 0.000046; // base movement speed
 
 // Keyboard controls
 window.addEventListener('keydown', (e) => {
@@ -173,7 +155,7 @@ window.addEventListener('keyup', (e) => {
   }
 });
 
-// Touch controls
+// Touch controls for mobile (drag to move)
 const mapContainer = map.getContainer();
 mapContainer.addEventListener('pointerdown', (e) => {
   if (gameOver) return;
@@ -198,61 +180,57 @@ function endTouch() {
 mapContainer.addEventListener('pointerup', endTouch);
 mapContainer.addEventListener('pointercancel', endTouch);
 
-// Phone ring, vibration and overlapping call schedule
+// Phone ringing and order scheduling
 let phoneRinging = false;
 
 function ringPhone() {
   if (nextOrderIndex >= orders.length || phoneRinging || gameOver) return;
-
+  // Show ringing phone icon
   phoneIcon.dataset.orderIndex = nextOrderIndex;
   phoneIcon.style.display = 'block';
   phoneRinging = true;
-
+  // Device vibration feedback, if supported
   if (navigator.vibrate) {
     navigator.vibrate([200, 100, 200]);
   }
-
-  // Automatically answer the call after a brief delay
+  // Auto-answer the call after a brief ring
   setTimeout(answerPhone, 1000);
 }
 
 function answerPhone() {
   if (!phoneRinging) return;
-
+  // Stop vibration and hide ringing icon
   if (navigator.vibrate) navigator.vibrate(0);
   phoneIcon.style.display = 'none';
   phoneRinging = false;
-
+  // Start the delivery order
   const orderIdx = parseInt(phoneIcon.dataset.orderIndex, 10);
   startOrder(orderIdx);
   nextOrderIndex++;
-
-  // Schedule the next ring after 15 s, even if current order still runs
+  // Schedule the next phone ring after 15s (calls overlap if previous not done)
   setTimeout(ringPhone, 15000);
 }
 
+// Allow clicking the phone icon to answer immediately
 phoneIcon.addEventListener('click', answerPhone);
 
-// Create and track each order
+// Create and initiate a new order
 function startOrder(idx) {
   const cfg = orders[idx];
-
-  // House marker
+  // Add a house marker for the delivery location
   const house = L.marker(cfg.location, { icon: houseIcon }).addTo(map);
 
-  // Battery and turtle placed along route
+  // Place battery and turtle icons along the route (for speed changes)
   const [shopLat, shopLng] = pizzaLatLng;
   const [destLat, destLng] = cfg.location;
-
-  // multiple batteries for more frequent boosts
+  // two battery power-ups at 25% and 50% along the route
   [0.25, 0.5].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
     const battery = L.marker([lat, lng], { icon: batteryIcon }).addTo(map);
     batteryMarkers.push(battery);
   });
-
-  // multiple turtles for more frequent slowdowns
+  // two turtle slow-downs at 70% and 90% along the route
   [0.7, 0.9].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
@@ -260,7 +238,7 @@ function startOrder(idx) {
     turtleMarkers.push(turtle);
   });
 
-  // Order object with its own timer
+  // Track the new order
   const order = {
     idx,
     pizzasNeeded: cfg.pizzas,
@@ -270,70 +248,73 @@ function startOrder(idx) {
   };
   activeOrders.push(order);
 
+  // Start countdown timer for this order
   order.timerId = setInterval(() => {
     order.timeLeft--;
     updateHUD();
-    if (order.timeLeft <= 0) endGame(false);
+    if (order.timeLeft <= 0) endGame(false);  // order expired -> game over (lose)
   }, 1000);
 
-  // Update the persistent phone message at the top-right
+  // Display the phone message popup with order details
   const pizzaWord = cfg.pizzas === 1 ? "pizza" : "pizzas";
-  const callLine  = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
+  const callLine = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
   phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
   phoneMessage.style.display = 'block';
 
-  updateHUD();
+  updateHUD();  // refresh HUD to include this new order
 }
 
-// Pickup and delivery iterate through activeOrders
+// Pickup and delivery interactions
 map.on('click', (e) => {
   if (gameOver) return;
   const here = helicopterMarker.getLatLng();
   const clickPoint = map.latLngToLayerPoint(e.latlng);
 
-  // Pickup at shop when tapping near the pizzeria
+  // Pizza pickup: tap near the pizzeria icon to load pizzas
   const pizzaPoint = map.latLngToLayerPoint(pizzaMarker.getLatLng());
   if (clickPoint.distanceTo(pizzaPoint) <= PIZZA_TAP_RADIUS) {
-    if (carryingCount < 4) {
+    if (carryingCount < 5) {
       carryingCount++;
-      if (carryingCount === 1) lastPickupTime = Date.now();
       const tail = L.marker(here, { icon: tailPizzaIcon }).addTo(map);
       tailMarkers.push(tail);
     }
     return;
   }
 
-  // Delivery: check each active order and tap near house
+  // Delivery drop-off: tap near a house icon to deliver pizzas
   for (let i = activeOrders.length - 1; i >= 0; i--) {
     const order = activeOrders[i];
     const housePoint = map.latLngToLayerPoint(order.house.getLatLng());
     if (clickPoint.distanceTo(housePoint) <= HOUSE_TAP_RADIUS && carryingCount >= order.pizzasNeeded) {
+      // Deliver the order
       carryingCount -= order.pizzasNeeded;
-      for (let p = 0; p < order.pizzasNeeded; p++) tailMarkers.pop().remove();
-
+      for (let p = 0; p < order.pizzasNeeded; p++) {
+        tailMarkers.pop().remove();
+      }
       clearInterval(order.timerId);
       order.house.remove();
       activeOrders.splice(i, 1);
       deliveredCount++;
-
       updateHUD();
-
-      if (deliveredCount === orders.length) return endGame(true);
+      if (deliveredCount === orders.length) {
+        return endGame(true);  // all orders delivered – win the game
+      }
     }
   }
 });
 
-// Movement loop with collision detection
+// Movement loop with collision detection and power-ups
 function gameLoop() {
   if (gameOver) return;
 
+  // Determine movement delta for this frame
   let moveLat = 0, moveLng = 0;
   // Keyboard input
-  if (upPressed) moveLat += baseSpeed * speedMultiplier;
-  if (downPressed) moveLat -= baseSpeed * speedMultiplier;
+  if (upPressed)    moveLat += baseSpeed * speedMultiplier;
+  if (downPressed)  moveLat -= baseSpeed * speedMultiplier;
   if (rightPressed) moveLng += baseSpeed * speedMultiplier;
-  if (leftPressed) moveLng -= baseSpeed * speedMultiplier;
-  // Touch drag
+  if (leftPressed)  moveLng -= baseSpeed * speedMultiplier;
+  // Touch drag input
   if (touchActive) {
     if (Math.abs(touchDeltaY) > touchThreshold) {
       const dyFactor = Math.max(-1, Math.min(1, -touchDeltaY / 100));
@@ -345,6 +326,7 @@ function gameLoop() {
     }
   }
 
+  // Move helicopter and map if there's any input
   if (moveLat !== 0 || moveLng !== 0) {
     heliLat += moveLat;
     const cosLat = Math.cos(heliLat * Math.PI / 180);
@@ -353,6 +335,7 @@ function gameLoop() {
     map.setView([heliLat, heliLng]);
   }
 
+  // Update helicopter trail (for carried pizzas)
   heliTrail.push([heliLat, heliLng]);
   const maxTrail = tailMarkers.length * TAIL_SPACING + 1;
   if (heliTrail.length > maxTrail) {
@@ -364,32 +347,33 @@ function gameLoop() {
     m.setLatLng(pos);
   });
 
+  // Check collisions with batteries (speed boost) and turtles (slowdown)
   const heliLatLng = helicopterMarker.getLatLng();
-  // inside gameLoop after helicopter position update
   batteryMarkers.forEach((m, i) => {
     if (m && heliLatLng.distanceTo(m.getLatLng()) < 50) {
-      m.remove(); batteryMarkers[i] = null;
-      speedMultiplier = 2;            // boost
+      m.remove();
+      batteryMarkers[i] = null;
+      speedMultiplier = 2;  // boost speed
       if (speedTimeout) clearTimeout(speedTimeout);
-      speedTimeout = setTimeout(() => speedMultiplier = 1, 5000);
+      speedTimeout = setTimeout(() => { speedMultiplier = 1; }, 5000);
     }
   });
   turtleMarkers.forEach((m, i) => {
     if (m && heliLatLng.distanceTo(m.getLatLng()) < 50) {
-      m.remove(); turtleMarkers[i] = null;
-      speedMultiplier = 0.5;          // slow
+      m.remove();
+      turtleMarkers[i] = null;
+      speedMultiplier = 0.5;  // slow down
       if (speedTimeout) clearTimeout(speedTimeout);
-      speedTimeout = setTimeout(() => speedMultiplier = 1, 5000);
+      speedTimeout = setTimeout(() => { speedMultiplier = 1; }, 5000);
     }
   });
 
-  updateCompass();
-
+  updateCompass();  // update compass arrows each frame
   requestAnimationFrame(gameLoop);
 }
 requestAnimationFrame(gameLoop);
 
-// HUD lists every live timer
+// HUD update to list deliveries and timers
 function updateHUD() {
   const lines = [`Deliveries: ${deliveredCount}/${orders.length}`];
   activeOrders.forEach(o => {
@@ -399,37 +383,33 @@ function updateHUD() {
   hud.innerHTML = lines.join('<br>');
 }
 
-// End-game clears everything
+// End-game routine (win or lose)
 function endGame(win) {
   if (gameOver) return;
   gameOver = true;
-
-  // Stop all timers
+  // Stop all active order timers
   activeOrders.forEach(o => clearInterval(o.timerId));
-  clearInterval(spoilInterval);
-
-  // Remove all markers
+  // Remove all markers (battery, turtle, houses, pizza tails)
   [...batteryMarkers, ...turtleMarkers].forEach(m => m && m.remove());
   activeOrders.forEach(o => o.house.remove());
   tailMarkers.forEach(m => m.remove());
-
+  // Show game over message
   const msg = win
     ? `Delivered all ${orders.length} orders. Great job.`
     : `Time up. You delivered ${deliveredCount} of ${orders.length}.`;
   gameOverContent.innerHTML = msg;
-      gameOverScreen.style.display = 'flex';
-
-      // Pause the game background music when the game ends to avoid looping audio after game over.
-      try {
-        const gameAudioElem = document.getElementById('game-audio');
-        if (gameAudioElem && !gameAudioElem.paused) {
-          gameAudioElem.pause();
-          gameAudioElem.currentTime = 0;
-        }
-      } catch (e) {
-        // Swallow errors if the audio element isn't available
-      }
+  gameOverScreen.style.display = 'flex';
+  // Stop game background music
+  try {
+    const gameAudioElem = document.getElementById('game-audio');
+    if (gameAudioElem && !gameAudioElem.paused) {
+      gameAudioElem.pause();
+      gameAudioElem.currentTime = 0;
+    }
+  } catch (e) {
+    // Ignore errors if audio element isn't available
+  }
 }
 
-// Start the first ringing phone one second after game load
+// Start the first phone ring 1 second after game start
 setTimeout(ringPhone, 1000);
