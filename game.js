@@ -122,13 +122,15 @@ function updateCompass() {
   // point pizza arrow toward pizzeria
   const [pLat, pLng] = pizzaLatLng;
   const pizzaBearing = bearingTo(pLat, pLng);
-  pizzaArrow.style.transform = `translate(-50%, -65%) rotate(${pizzaBearing}deg)`;
+  // Position arrow container at the centre of the compass and rotate by bearing
+  pizzaArrow.style.transform = `translate(-50%, -50%) rotate(${pizzaBearing}deg)`;
 
   // point house arrow toward first active order’s house (if any)
   if (activeOrders.length > 0) {
     const hLatLng = activeOrders[0].house.getLatLng();
     const houseBearing = bearingTo(hLatLng.lat, hLatLng.lng);
-    houseArrow.style.transform = `translate(-50%, -65%) rotate(${houseBearing}deg)`;
+    // Position arrow container at the centre of the compass and rotate by bearing
+    houseArrow.style.transform = `translate(-50%, -50%) rotate(${houseBearing}deg)`;
     houseArrow.style.display = 'block';
   } else {
     houseArrow.style.display = 'none';

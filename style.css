@@ -123,21 +123,53 @@ body {
 }
 
 /* Arrow indicators centred in the compass; default pointing north */
-#pizza-arrow, #house-arrow {
+/* Arrow indicators centred in the compass. We draw each arrow with a
+   rectangular tail and a triangular head using ::before and ::after pseudo-elements.
+   The parent container has zero size; the pseudo-elements form the visible arrow.
+   Rotating the parent will rotate both tail and head together. */
+#pizza-arrow,
+#house-arrow {
   position: absolute;
   left: 50%;
   top: 50%;
   width: 0;
   height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 24px solid #fff;
-  transform-origin: 50% 80%;
-  transform: translate(-50%, -65%) rotate(0deg);
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
   z-index: 2001;
 }
-#house-arrow {
-  border-bottom-color: #f44;  /* delivery arrow coloured red */
+/* Tail of the arrow */
+#pizza-arrow::before,
+#house-arrow::before {
+  content: "";
+  position: absolute;
+  /* Position tail so it centers on the rotation point and extends upward */
+  top: -35px;
+  left: -2px;
+  width: 4px;
+  height: 28px;
+  background: #fff;
+}
+/* Delivery arrow tail is red */
+#house-arrow::before {
+  background: #f44;
+}
+/* Head of the arrow (triangle) */
+#pizza-arrow::after,
+#house-arrow::after {
+  content: "";
+  position: absolute;
+  top: -35px;
+  left: -15px;
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 25px solid #fff;
+}
+/* Delivery arrow head is red */
+#house-arrow::after {
+  border-bottom-color: #f44;
 }
 
 /* Phone call UI elements */
