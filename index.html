@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Santa Cruz Pizza Delivery Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
   <!-- Main stylesheet for retro styles -->
   <link rel="stylesheet" href="style.css" />
   <!-- Leaflet CSS & JS for the game map -->
@@ -52,6 +52,7 @@
   <img id="phone-icon" src="images/phone.png" alt="Ringing phone icon" />
   <div id="msg-log" aria-live="polite"></div>
   <audio id="ring-audio" src="sounds/phone-ring.mp3" preload="auto" loop playsinline></audio>
+  <button id="sound-toggle" title="Enable sound">🔊</button>
 
   <!-- Game Over Screen (hidden until the game ends) -->
   <div id="game-over">
