@@ -35,8 +35,12 @@
   </div>
   <div id="phone-message"><!-- Phone call text --></div>
   <img id="phone-icon" src="images/phone.png" alt="Ringing phone icon" />
-  <div id="nav-banner" aria-live="polite"></div>
+  <div id="nav-banner" aria-live="polite">
+    <div id="nav-arrow" aria-hidden="true"></div>
+    <span id="nav-text"></span>
+  </div>
   <div id="msg-log" aria-live="polite"></div>
+  <audio id="ring-audio" src="sounds/phone-ring.mp3" preload="auto" loop></audio>
 
   <!-- Game Over Screen (hidden until the game ends) -->
   <div id="game-over">
