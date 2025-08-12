@@ -1,6 +1,6 @@
 /* Santa Cruz Pizza Delivery Game – restored full functionality */
 
-const fixedZoom = 18;
+const fixedZoom = 17.8;
 // Start right next to the pizzeria
 const startLat = 36.9737;
 const startLng = -122.0265;
@@ -56,23 +56,23 @@ map.invalidateSize();
 
 // Orders and progress data
 const orders = [
-  { address: "121 Waugh Ave", pizzas: 2, time: 45,
+  { address: "121 Waugh Ave", pizzas: 2, time: 60,
     location: [37.00371, -121.97777],
     caller: "Mister Manager", emoji: "🐶",
     msg: "Woof woof! I need {p} pizzas now!" },
-  { address: "Santa Cruz Beach Boardwalk", pizzas: 1, time: 30,
+  { address: "Santa Cruz Beach Boardwalk", pizzas: 1, time: 40,
     location: [36.964287, -122.018822],
     caller: "Paige", emoji: "🎢",
     msg: "Mark! I need {p} pizza at the Boardwalk!" },
-  { address: "Santa Cruz Wharf", pizzas: 3, time: 60,
+  { address: "Santa Cruz Wharf", pizzas: 3, time: 80,
     location: [36.9615, -122.0219],
     caller: "Otter 841", emoji: "🦦",
     msg: "Bro, I need {p} pizzas — ASAP!" },
-  { address: "UCSC", pizzas: 2, time: 50,
+  { address: "UCSC", pizzas: 2, time: 67,
     location: [37.00053, -122.06692],
     caller: "Stoner college kid", emoji: "🧑‍🎓",
     msg: "Dude, I’ve got the munchies—bring me {p} pizzas." },
-  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 60,
+  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 80,
     location: [37.062073, -122.149203],
     caller: "JoBen", emoji: "🍷",
     msg: "Mark, get {p} pizzas here or you might not have a job tomorrow." }
@@ -323,7 +323,7 @@ function ringPhone() {
   phoneRinging = true;
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
   startRingTone();                  // play ringtone (or start beep fallback)
-  setTimeout(answerPhone, 1000);    // auto-answer after 1s (click still allowed)
+  setTimeout(answerPhone, 1250);    // auto-answer after ~1.25s (click still allowed)
 }
 
 function answerPhone() {
@@ -337,7 +337,7 @@ function answerPhone() {
   const orderIdx = parseInt(phoneIcon.dataset.orderIndex, 10);
   startOrder(orderIdx);
   nextOrderIndex++;
-  setTimeout(ringPhone, 15000);
+  setTimeout(ringPhone, 18750);
 }
 
 // Allow clicking the phone icon to answer immediately
@@ -394,12 +394,12 @@ function startOrder(idx) {
   const callLine = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
   showPhoneMessage(cfg.caller, cfg.emoji, callLine, 4500);
 
-  // follow-up reminder 10–13s later if still active
+  // follow-up reminder 12.5–16.25s later if still active
   setTimeout(() => {
     if (!gameOver && activeOrders.find(o => o.idx === idx)) {
       showPhoneMessage(cfg.caller, cfg.emoji, "Hey, I am still waiting for my pizzas!", 3500);
     }
-  }, 10000 + Math.random() * 3000);
+  }, 12500 + Math.random() * 3750);
 
   // highlight target on map and refresh HUD
   setTargetPulse(house.getLatLng());
@@ -423,7 +423,7 @@ map.on('click', (e) => {
     if (gamePaused) {
       gamePaused = false;
       if (tutorialMsg) tutorialMsg.style.display = 'none';
-      setTimeout(ringPhone, 1000);
+      setTimeout(ringPhone, 1250);
     }
     return;
   }
