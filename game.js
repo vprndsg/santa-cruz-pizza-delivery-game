@@ -47,6 +47,7 @@ const HOUSE_TAP_RADIUS = houseIcon.options.iconSize[0] / 2 + 10;
 // Starting markers on the map
 let heliLat = startLat, heliLng = startLng;
 const helicopterMarker = L.marker([heliLat, heliLng], { icon: heliIcon }).addTo(map);
+let heliLatLng = L.latLng(heliLat, heliLng);
 const pizzaLatLng = [36.9737, -122.0263];
 const pizzaMarker = L.marker(pizzaLatLng, { icon: pizzaIcon }).addTo(map);
 
@@ -99,46 +100,98 @@ let speedMultiplier = 1;
 let speedTimeout = null;   // timeout ID for speed boost/slow reset
 
 // HUD and UI elements
-const hud = document.getElementById('hud');
-const phoneIcon = document.getElementById('phone-icon');
-const phoneMessage = document.getElementById('phone-message');
-const pizzaArrow = document.getElementById('pizza-arrow');
-const houseArrow = document.getElementById('house-arrow');
-const gameOverScreen = document.getElementById('game-over');
+const hud         = document.getElementById('hud');
+const phoneIcon   = document.getElementById('phone-icon');
+const phoneMessage= document.getElementById('phone-message');
+const navBanner   = document.getElementById('nav-banner');
+const msgLog      = document.getElementById('msg-log');
+const compass     = document.getElementById('compass');
+const pizzaArrow  = document.getElementById('pizza-arrow');
+const houseArrow  = document.getElementById('house-arrow');
+const gameOverScreen  = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
 
-// Compass direction calculation
-// Calculate true bearing (degrees clockwise from north) from the helicopter to a target
-function bearingTo(lat, lng) {
-  const here = helicopterMarker.getLatLng();
-  const φ1 = here.lat * Math.PI / 180;
-  const φ2 = lat       * Math.PI / 180;
-  const Δλ = (lng - here.lng) * Math.PI / 180;
+// Ensure HUD visible when game starts
+window.addEventListener('load', () => { hud.style.display = 'block'; });
+
+// Helpers: bearing and distance formatting
+function bearingFromTo(a, b) {
+  const φ1 = a.lat * Math.PI / 180, φ2 = b.lat * Math.PI / 180;
+  const Δλ = (b.lng - a.lng) * Math.PI / 180;
   const y = Math.sin(Δλ) * Math.cos(φ2);
   const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-  const θ = Math.atan2(y, x);
-  return (θ * 180 / Math.PI + 360) % 360;
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+function formatDistance(m) {
+  return m >= 1000 ? `${(m/1000).toFixed(1)} km` : `${Math.round(m)} m`;
 }
 
-function updateCompass() {
-  // point pizza arrow toward pizzeria
-  const [pLat, pLng] = pizzaLatLng;
-  const pizzaBearing = bearingTo(pLat, pLng);
-  // Position arrow container at the centre of the compass and rotate by bearing
-  pizzaArrow.style.transform = `translate(-50%, -50%) rotate(${pizzaBearing}deg)`;
-
-  // point house arrow toward first active order’s house (if any)
-  if (activeOrders.length > 0) {
-    const hLatLng = activeOrders[0].house.getLatLng();
-    const houseBearing = bearingTo(hLatLng.lat, hLatLng.lng);
-    // Position arrow container at the centre of the compass and rotate by bearing
-    houseArrow.style.transform = `translate(-50%, -50%) rotate(${houseBearing}deg)`;
-    houseArrow.style.display = 'block';
+// Pulsing target marker near active house
+let targetPulseMarker = null;
+function setTargetPulse(latlng) {
+  if (!latlng) {
+    if (targetPulseMarker) { targetPulseMarker.remove(); targetPulseMarker = null; }
+    return;
+  }
+  const pulse = L.divIcon({ className: 'target-pulse' });
+  if (!targetPulseMarker) {
+    targetPulseMarker = L.marker(latlng, { icon: pulse, interactive: false }).addTo(map);
   } else {
-    houseArrow.style.display = 'none';
+    targetPulseMarker.setLatLng(latlng);
   }
 }
+
+// Message helpers
+let phoneHideTimer = null;
+function showPhoneMessage(caller, emoji, text, showMs = 3500) {
+  if (phoneHideTimer) { clearTimeout(phoneHideTimer); phoneHideTimer = null; }
+  phoneMessage.innerHTML = `${emoji} <strong>${caller}:</strong> ${text}`;
+  phoneMessage.classList.remove('slide-in');
+  void phoneMessage.offsetWidth;           // restart animation
+  phoneMessage.classList.add('slide-in');
+  phoneMessage.style.display = 'block';
+  logMessage(`${emoji} ${caller}: ${text}`);
+  phoneHideTimer = setTimeout(() => { phoneMessage.style.display = 'none'; }, showMs);
+}
+function logMessage(text) {
+  if (!msgLog) return;
+  const el = document.createElement('div');
+  el.className = 'msg';
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2,'0');
+  const mm = String(t.getMinutes()).padStart(2,'0');
+  el.textContent = `[${hh}:${mm}] ${text}`;
+  msgLog.prepend(el);
+  while (msgLog.children.length > 3) msgLog.lastChild.remove();
+}
+
+// Live navigation: rotate arrows and banner
+function updateNav() {
+  if (!heliLatLng) return; // relies on existing heliLatLng updates
+  const heli = L.latLng(heliLatLng);
+  const pizzaLL = Array.isArray(pizzaLatLng) ? L.latLng(pizzaLatLng[0], pizzaLatLng[1]) : L.latLng(pizzaLatLng);
+  const pizzaBrg = bearingFromTo(heli, pizzaLL);
+  pizzaArrow.style.transform = `rotate(${pizzaBrg}deg)`;
+
+  const active = activeOrders[0];
+  if (active && active.house) {
+    const houseLL = active.house.getLatLng();
+    const houseBrg = bearingFromTo(heli, houseLL);
+    const dist = heli.distanceTo(houseLL);
+    houseArrow.style.opacity = '1';
+    houseArrow.style.transform = `rotate(${houseBrg}deg)`;
+    navBanner.style.display = 'block';
+    navBanner.textContent = `→ ${orders[active.idx].address} • ${formatDistance(dist)}`;
+    setTargetPulse(houseLL);
+  } else {
+    houseArrow.style.opacity = '0.25';
+    navBanner.style.display = 'none';
+    setTargetPulse(null);
+  }
+}
+// start lightweight nav updater
+setInterval(updateNav, 250);
 
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
@@ -197,29 +250,24 @@ let phoneRinging = false;
 
 function ringPhone() {
   if (nextOrderIndex >= orders.length || phoneRinging || gameOver) return;
-  // Show ringing phone icon
   phoneIcon.dataset.orderIndex = nextOrderIndex;
   phoneIcon.style.display = 'block';
+  phoneIcon.classList.add('ringing');
   phoneRinging = true;
-  // Device vibration feedback, if supported
-  if (navigator.vibrate) {
-    navigator.vibrate([200, 100, 200]);
-  }
-  // Auto-answer the call after a brief ring
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
   setTimeout(answerPhone, 1000);
 }
 
 function answerPhone() {
   if (!phoneRinging) return;
-  // Stop vibration and hide ringing icon
   if (navigator.vibrate) navigator.vibrate(0);
+  phoneIcon.classList.remove('ringing');
   phoneIcon.style.display = 'none';
   phoneRinging = false;
-  // Start the delivery order
+
   const orderIdx = parseInt(phoneIcon.dataset.orderIndex, 10);
   startOrder(orderIdx);
   nextOrderIndex++;
-  // Schedule the next phone ring after 15s (calls overlap if previous not done)
   setTimeout(ringPhone, 15000);
 }
 
@@ -229,27 +277,35 @@ phoneIcon.addEventListener('click', answerPhone);
 // Create and initiate a new order
 function startOrder(idx) {
   const cfg = orders[idx];
-  // Add a house marker for the delivery location
+
+  // house marker
   const house = L.marker(cfg.location, { icon: houseIcon }).addTo(map);
 
-  // Place battery, turtle and coin icons along/near the route
+  // ensure activeOrders entry tracks the house marker and timer
+  let entry = activeOrders.find(o => o.idx === idx);
+  if (!entry) {
+    entry = { idx, pizzasNeeded: cfg.pizzas, timeLeft: cfg.time, house, timerId: null };
+    activeOrders.push(entry);
+  } else {
+    entry.house = house;
+    entry.timeLeft = cfg.time;
+  }
+
+  // place batteries, turtles, coins as you already do
   const [shopLat, shopLng] = pizzaLatLng;
   const [destLat, destLng] = cfg.location;
-  // three battery power-ups at 25%, 50% and 75% along the route
   [0.25, 0.5, 0.75].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
     const battery = L.marker([lat, lng], { icon: batteryIcon }).addTo(map);
     batteryMarkers.push(battery);
   });
-  // three turtle slow-downs at 60%, 80% and 95% along the route
   [0.6, 0.8, 0.95].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
     const turtle = L.marker([lat, lng], { icon: turtleIcon }).addTo(map);
     turtleMarkers.push(turtle);
   });
-  // scatter multiple coin pickups along the route (avoid clustering near house)
   [0.2, 0.35, 0.5, 0.65, 0.8].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f + (Math.random() * 0.0004 - 0.0002);
     const lng = shopLng + (destLng - shopLng) * f + (Math.random() * 0.0004 - 0.0002);
@@ -257,38 +313,28 @@ function startOrder(idx) {
     coinMarkers.push(coin);
   });
 
-  // Track the new order
-  const order = {
-    idx,
-    pizzasNeeded: cfg.pizzas,
-    timeLeft: cfg.time,
-    house,
-    timerId: null
-  };
-  activeOrders.push(order);
-
-  // Start countdown timer for this order
-  order.timerId = setInterval(() => {
-    order.timeLeft--;
+  // start countdown timer for this order
+  entry.timerId = setInterval(() => {
+    entry.timeLeft--;
     updateHUD();
-    if (order.timeLeft <= 0) endGame(false);  // order expired -> game over (lose)
+    if (entry.timeLeft <= 0) endGame(false);  // order expired -> game over (lose)
   }, 1000);
 
-  // Display the phone message popup with order details
+  // phone message popup using helper
   const pizzaWord = cfg.pizzas === 1 ? "pizza" : "pizzas";
   const callLine = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
-  phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
-  phoneMessage.style.display = 'block';
+  showPhoneMessage(cfg.caller, cfg.emoji, callLine, 4500);
 
-  // Follow-up call after ~10-13 seconds if order still active
+  // follow-up reminder 10–13s later if still active
   setTimeout(() => {
     if (!gameOver && activeOrders.find(o => o.idx === idx)) {
-      phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> Hey, I'm still waiting for my pizzas!`;
-      phoneMessage.style.display = 'block';
+      showPhoneMessage(cfg.caller, cfg.emoji, "Hey, I am still waiting for my pizzas!", 3500);
     }
   }, 10000 + Math.random() * 3000);
 
-  updateHUD();  // refresh HUD to include this new order
+  // highlight target on map and refresh HUD
+  setTargetPulse(house.getLatLng());
+  updateHUD();
 }
 
 // Pickup and delivery interactions
@@ -322,6 +368,7 @@ map.on('click', (e) => {
       order.house.remove();
       activeOrders.splice(i, 1);
       tipScore += order.timeLeft; // bonus tips for remaining time
+      showPhoneMessage(orders[order.idx].caller, orders[order.idx].emoji, "Thanks. That hit the spot!", 3000);
       deliveredCount++;
       updateHUD();
       if (deliveredCount === orders.length) {
@@ -362,6 +409,7 @@ function gameLoop() {
     helicopterMarker.setLatLng([heliLat, heliLng]);
     map.setView([heliLat, heliLng]);
   }
+  heliLatLng = helicopterMarker.getLatLng();
 
   // Update helicopter trail (for carried pizzas)
   heliTrail.push([heliLat, heliLng]);
@@ -376,7 +424,6 @@ function gameLoop() {
   });
 
   // Check collisions with batteries (speed boost), turtles (slowdown) and coins (tips)
-  const heliLatLng = helicopterMarker.getLatLng();
   batteryMarkers.forEach((m, i) => {
     if (m && heliLatLng.distanceTo(m.getLatLng()) < 50) {
       m.remove();
@@ -404,7 +451,6 @@ function gameLoop() {
     }
   });
 
-  updateCompass();  // update compass arrows each frame
   requestAnimationFrame(gameLoop);
 }
 requestAnimationFrame(gameLoop);
