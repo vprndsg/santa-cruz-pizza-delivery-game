@@ -112,6 +112,7 @@ const compass     = document.getElementById('compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
 const pizzaLabel  = document.getElementById('pizza-label');
 const ringAudio   = document.getElementById('ring-audio');
+const soundToggle = document.getElementById('sound-toggle');
 const gameOverScreen  = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 const tutorialMsg = document.getElementById('tutorial-msg');
@@ -126,20 +127,24 @@ let audioUnlocked = false;
 let ringBeepTimer = null;
 let audioCtx = null;
 
-function unlockAudio() {
+function unlockAudio(){
   if (audioUnlocked) return;
-  if (ringAudio) {
+  audioUnlocked = true;
+  if (ringAudio){
     ringAudio.muted = true;
     ringAudio.play().then(() => {
-      ringAudio.pause(); ringAudio.currentTime = 0; ringAudio.muted = false; audioUnlocked = true;
-    }).catch(() => { /* will use beep fallback after first gesture */ });
+      ringAudio.pause(); ringAudio.currentTime = 0; ringAudio.muted = false;
+    }).catch(()=>{ /* will use WebAudio beep fallback */ });
   }
-  if (!audioUnlocked) { audioUnlocked = true; } // mark gate open for WebAudio
 }
 window.addEventListener('pointerdown', () => {
   unlockAudio();
-  if (phoneRinging) startRingTone();
-});
+  if (soundToggle) soundToggle.style.display = 'none';
+}, { once:true });
+
+if (soundToggle){
+  soundToggle.addEventListener('click', () => { unlockAudio(); soundToggle.style.display='none'; });
+}
 
 // correct bearing math: our SVG points EAST by default → rotate by (bearing - 90)
 function bearingFromTo(a, b){
@@ -177,7 +182,7 @@ function showPhoneMessage(caller, emoji, text, showMs = 3500) {
   logMessage(`${emoji} ${caller}: ${text}`);
   phoneHideTimer = setTimeout(() => { phoneMessage.style.display = 'none'; }, showMs);
 }
-function logMessage(text) {
+function logMessage(text){
   if (!msgLog) return;
   const el = document.createElement('div');
   el.className = 'msg';
@@ -186,35 +191,41 @@ function logMessage(text) {
   const mm = String(t.getMinutes()).padStart(2,'0');
   el.textContent = `[${hh}:${mm}] ${text}`;
   msgLog.prepend(el);
-  while (msgLog.children.length > 3) msgLog.lastChild.remove();
+  const maxLog = window.matchMedia('(max-width: 640px)').matches ? 2 : 4;
+  while (msgLog.children.length > maxLog) msgLog.lastChild.remove();
 }
 
-// live nav: banner → destination, bottom-left arrow → pizzeria with label
+// keep HUD, phone, and banner from overlapping; update arrows
+function updateSafeLayout(){
+  const h = (navBanner && navBanner.style.display !== 'none') ? navBanner.offsetHeight : 0;
+  document.documentElement.style.setProperty('--nav-h', `${h}px`);
+}
+
 function updateNav(){
   if (!heliLatLng) return;
-  const heli  = L.latLng(heliLatLng);
-  const shop  = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
+  const heli = L.latLng(heliLatLng);
+  const shop = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
 
-  // pizza arrow points to shop
+  // pizza arrow points to shop + label with distance
   const toShop = bearingFromTo(heli, shop);
   pizzaArrow.style.transform = `rotate(${toShop - 90}deg)`;
-  const dShop = heli.distanceTo(shop);
-  pizzaLabel.textContent = `Pizzeria • ${formatDistance(dShop)}`;
+  pizzaLabel.textContent = `Pizzeria • ${formatDistance(heli.distanceTo(shop))}`;
 
-  // banner arrow points to active destination
+  // destination banner
   const active = activeOrders[0];
   if (active && active.house){
     const houseLL = active.house.getLatLng();
     const toHouse = bearingFromTo(heli, houseLL);
-    const dHouse  = heli.distanceTo(houseLL);
     navArrow.style.transform = `rotate(${toHouse - 90}deg)`;
-    navText.textContent = `${orders[active.idx].address} • ${formatDistance(dHouse)}`;
+    navText.textContent = `${orders[active.idx].address} • ${formatDistance(heli.distanceTo(houseLL))}`;
     navBanner.style.display = 'flex';
   } else {
     navBanner.style.display = 'none';
   }
+  updateSafeLayout();
 }
 setInterval(updateNav, 250);
+window.addEventListener('resize', updateSafeLayout);
 
 // Movement control variables
 let upPressed = false, downPressed = false, leftPressed = false, rightPressed = false;
@@ -273,35 +284,34 @@ let phoneRinging = false;
 
 function startBeepLoop(){
   if (!audioUnlocked) return;
-  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const beep = () => {
     const o = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     o.type = 'square'; o.frequency.value = 900;
     g.gain.setValueAtTime(0, audioCtx.currentTime);
-    g.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
-    g.gain.linearRampToValueAtTime(0,   audioCtx.currentTime + 0.20);
+    g.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.02);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.22);
     o.connect(g).connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + 0.22);
+    o.start(); o.stop(audioCtx.currentTime + 0.24);
   };
   if (ringBeepTimer) clearInterval(ringBeepTimer);
-  beep(); ringBeepTimer = setInterval(beep, 600);
+  beep(); ringBeepTimer = setInterval(beep, 650);
 }
-function stopBeepLoop(){ if (ringBeepTimer){ clearInterval(ringBeepTimer); ringBeepTimer = null; } }
+function stopBeepLoop(){ if (ringBeepTimer){ clearInterval(ringBeepTimer); ringBeepTimer=null; } }
 
 function startRingTone(){
-  stopBeepLoop();
-  if (!audioUnlocked) return;
-  if (ringAudio) {
+  if (!audioUnlocked){ startBeepLoop(); return; }
+  if (ringAudio){
     ringAudio.currentTime = 0;
     const p = ringAudio.play();
-    if (p && typeof p.catch === 'function') p.catch(() => startBeepLoop());
+    if (p && typeof p.catch === 'function') p.catch(startBeepLoop);
   } else {
     startBeepLoop();
   }
 }
 function stopRingTone(){
-  if (ringAudio){ try { ringAudio.pause(); ringAudio.currentTime = 0; } catch{} }
+  if (ringAudio){ try{ ringAudio.pause(); ringAudio.currentTime = 0; }catch{} }
   stopBeepLoop();
 }
 
