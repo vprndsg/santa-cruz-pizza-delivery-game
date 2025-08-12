@@ -96,6 +96,7 @@ const TAIL_SPACING = 10;  // spacing of tail markers behind heli
 // Game state tracking
 let carryingCount = 0;
 let gameOver = false;
+let gamePaused = true;
 let speedMultiplier = 1;
 let speedTimeout = null;   // timeout ID for speed boost/slow reset
 
@@ -113,7 +114,9 @@ const pizzaLabel  = document.getElementById('pizza-label');
 const ringAudio   = document.getElementById('ring-audio');
 const gameOverScreen  = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
+const tutorialMsg = document.getElementById('tutorial-msg');
 gameOverScreen.style.display = 'none';
+if (tutorialMsg) tutorialMsg.style.display = 'block';
 
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
@@ -407,6 +410,11 @@ map.on('click', (e) => {
       const tail = L.marker(here, { icon: tailPizzaIcon }).addTo(map);
       tailMarkers.push(tail);
     }
+    if (gamePaused) {
+      gamePaused = false;
+      if (tutorialMsg) tutorialMsg.style.display = 'none';
+      setTimeout(ringPhone, 1000);
+    }
     return;
   }
 
@@ -437,6 +445,7 @@ map.on('click', (e) => {
 // Movement loop with collision detection and power-ups
 function gameLoop() {
   if (gameOver) return;
+  if (gamePaused) { requestAnimationFrame(gameLoop); return; }
 
   // Determine movement delta for this frame
   let moveLat = 0, moveLng = 0;
@@ -559,5 +568,3 @@ endGame = function(win) {
   return _endGame(win);
 };
 
-// Start the first phone ring 1 second after game start
-setTimeout(ringPhone, 1000);
