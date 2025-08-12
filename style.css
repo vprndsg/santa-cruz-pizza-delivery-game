@@ -113,25 +113,39 @@ body {
   max-width: min(46vw, 360px);
 }
 
-/* pizza compass stays bottom left */
+/* dock both cards bottom-left, same size, row layout */
 #compass{
-  position: absolute;
-  left:  calc(var(--safe-left) + 10px);
-  bottom: calc(var(--safe-bottom) + 10px);
-  z-index: 2000;
+  position:absolute;
+  left: calc(var(--safe-left, 0px) + 10px);
+  bottom: calc(var(--safe-bottom, 0px) + 10px);
+  z-index:2000;
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
 }
-#pizza-compass{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,.78);
-  padding: 6px 8px;
+
+.compass-card{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: rgba(0,0,0,.82);
+  padding: 8px 10px;
   border: 1px solid rgba(255,255,255,.6);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  height: 44px;                 /* same height for both bars */
 }
-#pizza-arrow{ width: 34px; height: 24px; transform-origin: 50% 50%; filter: drop-shadow(0 0 4px rgba(0,0,0,.6)); }
-#pizza-label{ color:#fff; font-family:"Hack",monospace; font-size:14px; }
+
+#pizza-arrow, #dest-arrow{
+  width:34px; height:24px;
+  transform-origin:50% 50%;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+}
+#pizza-label, #dest-label{
+  color:#fff; font-family:"Hack", monospace; font-size:14px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  max-width: min(44vw, 220px);
+}
 
 /* hide old house triangle if still present */
 #house-arrow{ display:none; }
@@ -221,15 +235,14 @@ body {
 
 /* Message log for last three messages */
 #msg-log{
-  position: absolute;
-  right: calc(var(--safe-right) + 10px);
-  bottom: calc(var(--safe-bottom) + 10px + var(--dock-h));
+  position:absolute;
+  right: calc(var(--safe-right, 0px) + 10px);
+  bottom: calc(var(--safe-bottom, 0px) + 10px + var(--dock-h, 60px));
   width: min(92vw, 390px);
-  z-index: 2050;
-  pointer-events: none;
+  z-index:2050; pointer-events:none;
 }
 #msg-log .msg{
-  pointer-events: auto;
+  pointer-events:auto;
   background: rgba(0,0,0,.85);
   color:#fff;
   border:1px solid rgba(255,255,255,.6);
@@ -271,6 +284,9 @@ body {
   border-right: 8px solid transparent;
   border-top: 10px solid #ffeb3b;        /* small pointer */
 }
+
+/* hide any old top banner if still present */
+#nav-banner{ display:none !important; }
 
 /* keep Leaflet attribution clear of overlays */
 .leaflet-control-attribution{

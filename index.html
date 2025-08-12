@@ -39,13 +39,22 @@
   </div>
 
   <div id="compass">
-    <div id="pizza-compass">
+    <div id="pizza-compass" class="compass-card">
       <svg id="pizza-arrow" viewBox="0 0 100 24" aria-hidden="true">
         <path d="M4 12 H70" stroke="#7CFC00" stroke-width="6" stroke-linecap="round"/>
         <path d="M60 4 L98 12 L60 20 Z" fill="#7CFC00"/>
       </svg>
       <span id="pizza-label">Pizzeria</span>
     </div>
+
+    <div id="dest-compass" class="compass-card" hidden>
+      <svg id="dest-arrow" viewBox="0 0 100 24" aria-hidden="true">
+        <path d="M4 12 H70" stroke="#ff5252" stroke-width="6" stroke-linecap="round"/>
+        <path d="M60 4 L98 12 L60 20 Z" fill="#ff5252"/>
+      </svg>
+      <span id="dest-label">Destination</span>
+    </div>
+
     <div id="arrow-tip" role="status" aria-live="polite"></div>
   </div>
 

@@ -112,6 +112,9 @@ const compassEl   = document.getElementById('compass');
 const pizzaCompass= document.getElementById('pizza-compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
 const pizzaLabel  = document.getElementById('pizza-label');
+const destCompass = document.getElementById('dest-compass');
+const destArrow   = document.getElementById('dest-arrow');
+const destLabel   = document.getElementById('dest-label');
 const arrowTip    = document.getElementById('arrow-tip');
 const ringAudio   = document.getElementById('ring-audio');
 const soundToggle = document.getElementById('sound-toggle');
@@ -124,13 +127,13 @@ if (tutorialMsg) tutorialMsg.style.display = 'block';
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
 
-// recompute dock height so msg log never overlaps the compass
+// dock height drives message log offset
 function updateDockHeight(){
-  const h = pizzaCompass ? pizzaCompass.offsetHeight : 0;
+  const h = compassEl ? compassEl.offsetHeight : 0;
   document.documentElement.style.setProperty('--dock-h', `${h + 10}px`);
 }
-window.addEventListener('resize', updateDockHeight);
 window.addEventListener('load', updateDockHeight);
+window.addEventListener('resize', updateDockHeight);
 
 // tip bubble helpers
 let arrowTipTimer = null;
@@ -232,11 +235,23 @@ function updateNav(){
   const heli = L.latLng(heliLatLng);
   const shop = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
 
+  // pizzeria arrow and label
   const toShop = bearingFromTo(heli, shop);
-  pizzaArrow.style.transform = `rotate(${toShop - 90}deg)`;
+  pizzaArrow.style.transform = `rotate(${toShop - 90}deg)`;     // SVG points East
   pizzaLabel.textContent = `Pizzeria • ${formatDistance(heli.distanceTo(shop))}`;
 
-  // destination banner handled elsewhere
+  // destination bar
+  const active = activeOrders[0];
+  if (active && active.house){
+    const goal = active.house.getLatLng();
+    const toHouse = bearingFromTo(heli, goal);
+    destArrow.style.transform = `rotate(${toHouse - 90}deg)`;
+    destLabel.textContent = `${orders[active.idx].address} • ${formatDistance(heli.distanceTo(goal))}`;
+    destCompass.hidden = false;
+  } else {
+    destCompass.hidden = true;
+  }
+
   updateDockHeight();
 }
 setInterval(updateNav, 250);
