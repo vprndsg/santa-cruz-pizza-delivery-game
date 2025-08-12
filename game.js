@@ -109,6 +109,7 @@ const navArrow    = document.getElementById('nav-arrow');
 const msgLog      = document.getElementById('msg-log');
 const compass     = document.getElementById('compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
+const pizzaLabel  = document.getElementById('pizza-label');
 const ringAudio   = document.getElementById('ring-audio');
 const gameOverScreen  = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
@@ -117,29 +118,34 @@ gameOverScreen.style.display = 'none';
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
 
-// Unlock audio on first user interaction
+// audio unlock + fallback beeps
 let audioUnlocked = false;
-window.addEventListener('pointerdown', () => {
-  if (audioUnlocked || !ringAudio) return;
-  ringAudio.muted = true;
-  ringAudio.play().then(() => {
-    ringAudio.pause();
-    ringAudio.muted = false;
-    audioUnlocked = true;
-  }).catch(() => { /* ignore */ });
-}, { once: true });
+let ringBeepTimer = null;
+let audioCtx = null;
 
-// Helpers: bearing and distance formatting
-function bearingFromTo(a, b) {
-  const φ1 = a.lat * Math.PI / 180, φ2 = b.lat * Math.PI / 180;
-  const Δλ = (b.lng - a.lng) * Math.PI / 180;
-  const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  if (ringAudio) {
+    ringAudio.muted = true;
+    ringAudio.play().then(() => {
+      ringAudio.pause(); ringAudio.currentTime = 0; ringAudio.muted = false; audioUnlocked = true;
+    }).catch(() => { /* will use beep fallback after first gesture */ });
+  }
+  if (!audioUnlocked) { audioUnlocked = true; } // mark gate open for WebAudio
 }
-function formatDistance(m) {
-  return m >= 1000 ? `${(m/1000).toFixed(1)} km` : `${Math.round(m)} m`;
+window.addEventListener('pointerdown', () => {
+  unlockAudio();
+  if (phoneRinging) startRingTone();
+});
+
+// correct bearing math: our SVG points EAST by default → rotate by (bearing - 90)
+function bearingFromTo(a, b){
+  const φ1=a.lat*Math.PI/180, φ2=b.lat*Math.PI/180, Δλ=(b.lng-a.lng)*Math.PI/180;
+  const y=Math.sin(Δλ)*Math.cos(φ2);
+  const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360; // 0 = North
 }
+function formatDistance(m){ return m>=1000?`${(m/1000).toFixed(1)} km`:`${Math.round(m)} m`; }
 
 // Pulsing target marker near active house
 let targetPulseMarker = null;
@@ -180,24 +186,26 @@ function logMessage(text) {
   while (msgLog.children.length > 3) msgLog.lastChild.remove();
 }
 
-// Live navigation: banner points to destination, compass points home
-function updateNav() {
+// live nav: banner → destination, bottom-left arrow → pizzeria with label
+function updateNav(){
   if (!heliLatLng) return;
+  const heli  = L.latLng(heliLatLng);
+  const shop  = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
 
-  // pizza arrow points back to pizzeria
-  const heli = L.latLng(heliLatLng);
-  const shop = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
+  // pizza arrow points to shop
   const toShop = bearingFromTo(heli, shop);
-  pizzaArrow.style.transform = `rotate(${toShop}deg)`;
+  pizzaArrow.style.transform = `rotate(${toShop - 90}deg)`;
+  const dShop = heli.distanceTo(shop);
+  pizzaLabel.textContent = `Pizzeria • ${formatDistance(dShop)}`;
 
   // banner arrow points to active destination
   const active = activeOrders[0];
-  if (active && active.house) {
+  if (active && active.house){
     const houseLL = active.house.getLatLng();
     const toHouse = bearingFromTo(heli, houseLL);
-    const dist = heli.distanceTo(houseLL);
-    navArrow.style.transform = `rotate(${toHouse}deg)`;
-    navText.textContent = `${orders[active.idx].address} • ${formatDistance(dist)}`;
+    const dHouse  = heli.distanceTo(houseLL);
+    navArrow.style.transform = `rotate(${toHouse - 90}deg)`;
+    navText.textContent = `${orders[active.idx].address} • ${formatDistance(dHouse)}`;
     navBanner.style.display = 'flex';
   } else {
     navBanner.style.display = 'none';
@@ -260,13 +268,38 @@ mapContainer.addEventListener('pointercancel', endTouch);
 // Phone ringing and order scheduling
 let phoneRinging = false;
 
-function startRingTone() {
-  if (!ringAudio) return;
-  try { ringAudio.volume = 0.6; ringAudio.currentTime = 0; ringAudio.play(); } catch {}
+function startBeepLoop(){
+  if (!audioUnlocked) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const beep = () => {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = 900;
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+    g.gain.linearRampToValueAtTime(0,   audioCtx.currentTime + 0.20);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.22);
+  };
+  if (ringBeepTimer) clearInterval(ringBeepTimer);
+  beep(); ringBeepTimer = setInterval(beep, 600);
 }
-function stopRingTone() {
-  if (!ringAudio) return;
-  try { ringAudio.pause(); ringAudio.currentTime = 0; } catch {}
+function stopBeepLoop(){ if (ringBeepTimer){ clearInterval(ringBeepTimer); ringBeepTimer = null; } }
+
+function startRingTone(){
+  stopBeepLoop();
+  if (!audioUnlocked) return;
+  if (ringAudio) {
+    ringAudio.currentTime = 0;
+    const p = ringAudio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => startBeepLoop());
+  } else {
+    startBeepLoop();
+  }
+}
+function stopRingTone(){
+  if (ringAudio){ try { ringAudio.pause(); ringAudio.currentTime = 0; } catch{} }
+  stopBeepLoop();
 }
 
 function ringPhone() {
@@ -276,8 +309,8 @@ function ringPhone() {
   phoneIcon.classList.add('ringing');
   phoneRinging = true;
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-  startRingTone();
-  setTimeout(answerPhone, 1000);
+  startRingTone();                  // play ringtone (or start beep fallback)
+  setTimeout(answerPhone, 1000);    // auto-answer after 1s (click still allowed)
 }
 
 function answerPhone() {

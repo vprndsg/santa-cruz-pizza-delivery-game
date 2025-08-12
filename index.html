@@ -29,18 +29,28 @@
   <!-- Game Map and UI Overlays (hidden until game starts) -->
   <div id="map"><!-- Leaflet map renders here --></div>
   <div id="hud"><!-- HUD status info (e.g., deliveries, timers) --></div>
-  <div id="compass">
-    <div id="pizza-arrow" class="arrow"></div>
-    <div id="house-arrow" class="arrow"></div>
-  </div>
-  <div id="phone-message"><!-- Phone call text --></div>
-  <img id="phone-icon" src="images/phone.png" alt="Ringing phone icon" />
   <div id="nav-banner" aria-live="polite">
-    <div id="nav-arrow" aria-hidden="true"></div>
+    <svg id="nav-arrow" viewBox="0 0 100 24" aria-hidden="true">
+      <path d="M4 12 H70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <path d="M60 4 L98 12 L60 20 Z" fill="#111"/>
+    </svg>
     <span id="nav-text"></span>
   </div>
+
+  <div id="compass">
+    <div id="pizza-compass">
+      <svg id="pizza-arrow" viewBox="0 0 100 24" aria-hidden="true">
+        <path d="M4 12 H70" stroke="#7CFC00" stroke-width="6" stroke-linecap="round"/>
+        <path d="M60 4 L98 12 L60 20 Z" fill="#7CFC00"/>
+      </svg>
+      <span id="pizza-label">Pizzeria</span>
+    </div>
+  </div>
+
+  <div id="phone-message"><!-- Phone call text --></div>
+  <img id="phone-icon" src="images/phone.png" alt="Ringing phone icon" />
   <div id="msg-log" aria-live="polite"></div>
-  <audio id="ring-audio" src="sounds/phone-ring.mp3" preload="auto" loop></audio>
+  <audio id="ring-audio" src="sounds/phone-ring.mp3" preload="auto" loop playsinline></audio>
 
   <!-- Game Over Screen (hidden until the game ends) -->
   <div id="game-over">

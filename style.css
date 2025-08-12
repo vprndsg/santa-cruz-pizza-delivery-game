@@ -103,17 +103,18 @@ body {
   box-shadow: 0 2px 10px rgba(0,0,0,.5);
 }
 
-/* Compass and navigation arrows */
-#compass { position: absolute; bottom: 10px; left: 10px; z-index: 2000; }
-#pizza-arrow {
-  width: 0; height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 26px solid #7CFC00;
-  transform-origin: 50% 80%;
-  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+/* compass and directional arrows */
+#compass{ position:absolute; bottom:10px; left:10px; z-index:2000; }
+#pizza-compass{
+  display:flex; align-items:center; gap:8px;
+  background:rgba(0,0,0,.75); padding:6px 8px; border:1px solid rgba(255,255,255,.6);
+  border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,.5);
 }
-#house-arrow { display: none; }
+#pizza-arrow{ width:34px; height:24px; transform-origin:50% 50%; filter:drop-shadow(0 0 4px rgba(0,0,0,.6)); }
+#pizza-label{ color:#fff; font-family:"Hack",monospace; font-size:14px; }
+
+/* hide old house triangle if still present */
+#house-arrow{ display:none; }
 
 /* Phone icon (rings with pulse animation) */
 #phone-icon {
@@ -161,34 +162,15 @@ body {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* Navigation banner at top center */
-#nav-banner {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  align-items: center;
-  gap: 8px;
-  font-family: "Hack", monospace;
-  font-size: 20px;
-  color: #111;
-  background: #ffeb3b;
-  border: 2px solid #111;
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 2100;
-  box-shadow: 0 2px 10px rgba(0,0,0,.35);
+/* navigation banner */
+#nav-banner{
+  position:absolute; top:10px; left:50%; transform:translateX(-50%);
+  display:none; align-items:center; gap:8px;
+  font-family:"Hack",monospace; font-size:20px; color:#111;
+  background:#ffeb3b; border:2px solid #111; padding:6px 12px; border-radius:6px;
+  z-index:2100; box-shadow:0 2px 10px rgba(0,0,0,.35);
 }
-#nav-arrow {
-  width: 0;
-  height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-bottom: 22px solid #111;
-  transform-origin: 50% 80%;
-  filter: drop-shadow(0 0 2px rgba(0,0,0,.4));
-}
+#nav-arrow{ width:34px; height:24px; flex-shrink:0; transform-origin:50% 50%; }
 
 /* Message log for last three messages */
 #msg-log {
