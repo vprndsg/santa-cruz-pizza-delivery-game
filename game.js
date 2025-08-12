@@ -108,9 +108,11 @@ const navBanner   = document.getElementById('nav-banner');
 const navText     = document.getElementById('nav-text');
 const navArrow    = document.getElementById('nav-arrow');
 const msgLog      = document.getElementById('msg-log');
-const compass     = document.getElementById('compass');
+const compassEl   = document.getElementById('compass');
+const pizzaCompass= document.getElementById('pizza-compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
 const pizzaLabel  = document.getElementById('pizza-label');
+const arrowTip    = document.getElementById('arrow-tip');
 const ringAudio   = document.getElementById('ring-audio');
 const soundToggle = document.getElementById('sound-toggle');
 const gameOverScreen  = document.getElementById('game-over');
@@ -121,6 +123,30 @@ if (tutorialMsg) tutorialMsg.style.display = 'block';
 
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
+
+// recompute dock height so msg log never overlaps the compass
+function updateDockHeight(){
+  const h = pizzaCompass ? pizzaCompass.offsetHeight : 0;
+  document.documentElement.style.setProperty('--dock-h', `${h + 10}px`);
+}
+window.addEventListener('resize', updateDockHeight);
+window.addEventListener('load', updateDockHeight);
+
+// tip bubble helpers
+let arrowTipTimer = null;
+function showArrowTip(text, ms = 3000){
+  if (!arrowTip) return;
+  arrowTip.textContent = text;
+  arrowTip.style.display = 'block';
+  if (arrowTipTimer) clearTimeout(arrowTipTimer);
+  arrowTipTimer = setTimeout(() => { arrowTip.style.display = 'none'; }, ms);
+}
+function hideArrowTip(){
+  if (!arrowTip) return;
+  arrowTip.style.display = 'none';
+  if (arrowTipTimer) clearTimeout(arrowTipTimer);
+  arrowTipTimer = null;
+}
 
 // audio unlock + fallback beeps
 let audioUnlocked = false;
@@ -206,23 +232,12 @@ function updateNav(){
   const heli = L.latLng(heliLatLng);
   const shop = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
 
-  // pizza arrow points to shop + label with distance
   const toShop = bearingFromTo(heli, shop);
   pizzaArrow.style.transform = `rotate(${toShop - 90}deg)`;
   pizzaLabel.textContent = `Pizzeria • ${formatDistance(heli.distanceTo(shop))}`;
 
-  // destination banner
-  const active = activeOrders[0];
-  if (active && active.house){
-    const houseLL = active.house.getLatLng();
-    const toHouse = bearingFromTo(heli, houseLL);
-    navArrow.style.transform = `rotate(${toHouse - 90}deg)`;
-    navText.textContent = `${orders[active.idx].address} • ${formatDistance(heli.distanceTo(houseLL))}`;
-    navBanner.style.display = 'flex';
-  } else {
-    navBanner.style.display = 'none';
-  }
-  updateSafeLayout();
+  // destination banner handled elsewhere
+  updateDockHeight();
 }
 setInterval(updateNav, 250);
 window.addEventListener('resize', updateSafeLayout);
@@ -360,6 +375,16 @@ function startOrder(idx) {
     entry.timeLeft = cfg.time;
   }
 
+  (function checkCapacityForNewOrder(idx){
+    const cfg = orders[idx];
+    const missing = Math.max(0, cfg.pizzas - carryingCount);
+    if (missing > 0){
+      showArrowTip(`Need ${missing} more pizza${missing>1?'s':''}. Head back to the Pizzeria.`);
+    } else {
+      hideArrowTip();
+    }
+  })(idx);
+
   // place batteries, turtles, coins as you already do
   const [shopLat, shopLng] = pizzaLatLng;
   const [destLat, destLng] = cfg.location;
@@ -432,21 +457,27 @@ map.on('click', (e) => {
   for (let i = activeOrders.length - 1; i >= 0; i--) {
     const order = activeOrders[i];
     const housePoint = map.latLngToLayerPoint(order.house.getLatLng());
-    if (clickPoint.distanceTo(housePoint) <= HOUSE_TAP_RADIUS && carryingCount >= order.pizzasNeeded) {
-      // Deliver the order
-      carryingCount -= order.pizzasNeeded;
-      for (let p = 0; p < order.pizzasNeeded; p++) {
-        tailMarkers.pop().remove();
-      }
-      clearInterval(order.timerId);
-      order.house.remove();
-      activeOrders.splice(i, 1);
-      tipScore += order.timeLeft; // bonus tips for remaining time
-      showPhoneMessage(orders[order.idx].caller, orders[order.idx].emoji, "Thanks. That hit the spot!", 3000);
-      deliveredCount++;
-      updateHUD();
-      if (deliveredCount === orders.length) {
-        return endGame(true);  // all orders delivered – win the game
+    if (clickPoint.distanceTo(housePoint) <= HOUSE_TAP_RADIUS){
+      if (carryingCount >= order.pizzasNeeded){
+        // Deliver the order
+        carryingCount -= order.pizzasNeeded;
+        for (let p = 0; p < order.pizzasNeeded; p++) {
+          tailMarkers.pop().remove();
+        }
+        clearInterval(order.timerId);
+        order.house.remove();
+        activeOrders.splice(i, 1);
+        tipScore += order.timeLeft; // bonus tips for remaining time
+        showPhoneMessage(orders[order.idx].caller, orders[order.idx].emoji, "Thanks. That hit the spot!", 3000);
+        deliveredCount++;
+        updateHUD();
+        hideArrowTip();  // clear any previous hint
+        if (deliveredCount === orders.length) {
+          return endGame(true);  // all orders delivered – win the game
+        }
+      } else {
+        const need = order.pizzasNeeded - carryingCount;
+        showArrowTip(`Need ${need} more pizza${need>1?'s':''}. Head back to the Pizzeria.`);
       }
     }
   }
