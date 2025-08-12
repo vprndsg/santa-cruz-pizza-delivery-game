@@ -553,11 +553,41 @@ function endGame(win) {
   [...batteryMarkers, ...turtleMarkers, ...coinMarkers].forEach(m => m && m.remove());
   activeOrders.forEach(o => o.house.remove());
   tailMarkers.forEach(m => m.remove());
-  // Show game over message
-  const msg = win
-    ? `Delivered all ${orders.length} orders. Great job.`
-    : `Time up. You delivered ${deliveredCount} of ${orders.length}.`;
-  gameOverContent.innerHTML = msg;
+  // Show game over message and optional boss sequence
+  if (win) {
+    gameOverContent.innerHTML = `Delivered all ${orders.length} orders. Great job.`;
+  } else {
+    gameOverContent.innerHTML = `
+      <div id="game-over-inner">
+        <img class="boss-img" src="images/boss.png" alt="Boss" />
+        <div id="game-over-text"></div>
+      </div>
+      <button id="play-again-btn" class="pulse">Play again</button>
+    `;
+    const sentences = [
+      "Damnit Mark, we didn't meet our quota.",
+      "Our stock is crashing!",
+      "You're Fired!"
+    ];
+    const textEl = document.getElementById('game-over-text');
+    let idx = 0;
+    function showNext() {
+      if (idx < sentences.length) {
+        textEl.innerHTML = '';
+        const p = document.createElement('p');
+        p.textContent = sentences[idx++];
+        textEl.appendChild(p);
+      } else {
+        clearInterval(interval);
+      }
+    }
+    showNext();
+    const interval = setInterval(showNext, 2500);
+    const playAgainBtn = document.getElementById('play-again-btn');
+    if (playAgainBtn) {
+      playAgainBtn.addEventListener('click', () => location.reload());
+    }
+  }
   gameOverScreen.style.display = 'flex';
   // Stop game background music
   try {
@@ -568,6 +598,18 @@ function endGame(win) {
     }
   } catch (e) {
     // Ignore errors if audio element isn't available
+  }
+  // Restart intro music on failure
+  if (!win) {
+    try {
+      const introAudioElem = document.getElementById('intro-audio');
+      if (introAudioElem) {
+        introAudioElem.currentTime = 0;
+        introAudioElem.play().catch(() => {});
+      }
+    } catch (e) {
+      // ignore audio errors
+    }
   }
 }
 
