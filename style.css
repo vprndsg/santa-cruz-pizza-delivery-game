@@ -230,11 +230,12 @@ body {
   }
 }
 
-/* Increase the size of map icons (pizza, house, battery, turtle) */
+/* Increase the size of map icons (pizza, house, battery, turtle, coin) */
 .pizza-icon,
 .house-icon,
 .battery-icon,
-.turtle-icon {
+.turtle-icon,
+.coin-icon {
   /* Large font to fill the div container for the emoji icons */
   /* Slightly reduce font-size after enlarging icons (approx. 30% smaller) */
   font-size: 140px;
