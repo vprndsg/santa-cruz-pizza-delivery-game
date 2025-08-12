@@ -29,15 +29,16 @@ const tileLayer = L.tileLayer(
   }
 ).addTo(map);
 
-// Icons (helicopter, pizza, house, battery, turtle)
+// Icons (helicopter, pizza, house, battery, turtle, coin)
 const heliIcon   = L.icon({ iconUrl: 'images/helicopter.png', iconSize: [120, 120], iconAnchor: [60, 60] });
 // Increase the size of the pizzeria pizza icon (larger than original, but scaled down from previous increase)
 const pizzaIcon  = L.divIcon({ html: "🍕", className: "pizza-icon", iconSize: [315, 315] });
 const tailPizzaIcon = L.divIcon({ html: "🍕", className: "tail-pizza-icon", iconSize: [30, 30] });
-// Make house, battery, and turtle icons larger (scaled down slightly from previous)
+// Make house, battery, turtle, and coin icons larger (scaled down slightly from previous)
 const houseIcon  = L.divIcon({ html: "🏠", className: "house-icon", iconSize: [315, 315] });
 const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSize: [210, 210] });
 const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [210, 210] });
+const coinIcon    = L.divIcon({ html: "💰", className: "coin-icon",   iconSize: [210, 210] });
 
 // Tap detection radii for pickup/delivery (icon half-size + buffer)
 const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
@@ -79,10 +80,12 @@ const orders = [
 let nextOrderIndex = 0;        // which order will ring next
 const activeOrders = [];       // currently active delivery orders
 let deliveredCount = 0;        // count of delivered orders
+let tipScore = 0;              // accumulated tips from coins and bonuses
 
 // Per-order helper arrays
 const batteryMarkers = [];
 const turtleMarkers  = [];
+const coinMarkers    = [];
 
 // Tail markers for carried pizzas (one per pizza in helicopter)
 const tailMarkers = [];
@@ -229,22 +232,29 @@ function startOrder(idx) {
   // Add a house marker for the delivery location
   const house = L.marker(cfg.location, { icon: houseIcon }).addTo(map);
 
-  // Place battery and turtle icons along the route (for speed changes)
+  // Place battery, turtle and coin icons along/near the route
   const [shopLat, shopLng] = pizzaLatLng;
   const [destLat, destLng] = cfg.location;
-  // two battery power-ups at 25% and 50% along the route
-  [0.25, 0.5].forEach(f => {
+  // three battery power-ups at 25%, 50% and 75% along the route
+  [0.25, 0.5, 0.75].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
     const battery = L.marker([lat, lng], { icon: batteryIcon }).addTo(map);
     batteryMarkers.push(battery);
   });
-  // two turtle slow-downs at 70% and 90% along the route
-  [0.7, 0.9].forEach(f => {
+  // three turtle slow-downs at 60%, 80% and 95% along the route
+  [0.6, 0.8, 0.95].forEach(f => {
     const lat = shopLat + (destLat - shopLat) * f;
     const lng = shopLng + (destLng - shopLng) * f;
     const turtle = L.marker([lat, lng], { icon: turtleIcon }).addTo(map);
     turtleMarkers.push(turtle);
+  });
+  // two coin pickups placed near the destination house
+  [[0.0003, 0], [0, 0.0003]].forEach(offset => {
+    const coinLat = destLat + offset[0];
+    const coinLng = destLng + offset[1];
+    const coin = L.marker([coinLat, coinLng], { icon: coinIcon }).addTo(map);
+    coinMarkers.push(coin);
   });
 
   // Track the new order
@@ -269,6 +279,14 @@ function startOrder(idx) {
   const callLine = cfg.msg.replace("{p}", `${cfg.pizzas} ${pizzaWord}`);
   phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> ${callLine}`;
   phoneMessage.style.display = 'block';
+
+  // Follow-up call after ~10-13 seconds if order still active
+  setTimeout(() => {
+    if (!gameOver && activeOrders.find(o => o.idx === idx)) {
+      phoneMessage.innerHTML = `${cfg.emoji} <strong>${cfg.caller}:</strong> Hey, I'm still waiting for my pizzas!`;
+      phoneMessage.style.display = 'block';
+    }
+  }, 10000 + Math.random() * 3000);
 
   updateHUD();  // refresh HUD to include this new order
 }
@@ -303,6 +321,7 @@ map.on('click', (e) => {
       clearInterval(order.timerId);
       order.house.remove();
       activeOrders.splice(i, 1);
+      tipScore += order.timeLeft; // bonus tips for remaining time
       deliveredCount++;
       updateHUD();
       if (deliveredCount === orders.length) {
@@ -356,7 +375,7 @@ function gameLoop() {
     m.setLatLng(pos);
   });
 
-  // Check collisions with batteries (speed boost) and turtles (slowdown)
+  // Check collisions with batteries (speed boost), turtles (slowdown) and coins (tips)
   const heliLatLng = helicopterMarker.getLatLng();
   batteryMarkers.forEach((m, i) => {
     if (m && heliLatLng.distanceTo(m.getLatLng()) < 50) {
@@ -376,6 +395,14 @@ function gameLoop() {
       speedTimeout = setTimeout(() => { speedMultiplier = 1; }, 5000);
     }
   });
+  coinMarkers.forEach((m, i) => {
+    if (m && heliLatLng.distanceTo(m.getLatLng()) < 50) {
+      m.remove();
+      coinMarkers[i] = null;
+      tipScore += 1;
+      updateHUD();
+    }
+  });
 
   updateCompass();  // update compass arrows each frame
   requestAnimationFrame(gameLoop);
@@ -384,7 +411,10 @@ requestAnimationFrame(gameLoop);
 
 // HUD update to list deliveries and timers
 function updateHUD() {
-  const lines = [`Deliveries: ${deliveredCount}/${orders.length}`];
+  const lines = [
+    `Deliveries: ${deliveredCount}/${orders.length}`,
+    `Tips: ${tipScore}`
+  ];
   activeOrders.forEach(o => {
     const cfg = orders[o.idx];
     lines.push(`${cfg.address}: ${o.timeLeft}s`);
@@ -398,8 +428,8 @@ function endGame(win) {
   gameOver = true;
   // Stop all active order timers
   activeOrders.forEach(o => clearInterval(o.timerId));
-  // Remove all markers (battery, turtle, houses, pizza tails)
-  [...batteryMarkers, ...turtleMarkers].forEach(m => m && m.remove());
+  // Remove all markers (battery, turtle, coin, houses, pizza tails)
+  [...batteryMarkers, ...turtleMarkers, ...coinMarkers].forEach(m => m && m.remove());
   activeOrders.forEach(o => o.house.remove());
   tailMarkers.forEach(m => m.remove());
   // Show game over message
