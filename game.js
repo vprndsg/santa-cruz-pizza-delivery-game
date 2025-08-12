@@ -104,16 +104,30 @@ const hud         = document.getElementById('hud');
 const phoneIcon   = document.getElementById('phone-icon');
 const phoneMessage= document.getElementById('phone-message');
 const navBanner   = document.getElementById('nav-banner');
+const navText     = document.getElementById('nav-text');
+const navArrow    = document.getElementById('nav-arrow');
 const msgLog      = document.getElementById('msg-log');
 const compass     = document.getElementById('compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
-const houseArrow  = document.getElementById('house-arrow');
+const ringAudio   = document.getElementById('ring-audio');
 const gameOverScreen  = document.getElementById('game-over');
 const gameOverContent = document.getElementById('game-over-content');
 gameOverScreen.style.display = 'none';
 
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
+
+// Unlock audio on first user interaction
+let audioUnlocked = false;
+window.addEventListener('pointerdown', () => {
+  if (audioUnlocked || !ringAudio) return;
+  ringAudio.muted = true;
+  ringAudio.play().then(() => {
+    ringAudio.pause();
+    ringAudio.muted = false;
+    audioUnlocked = true;
+  }).catch(() => { /* ignore */ });
+}, { once: true });
 
 // Helpers: bearing and distance formatting
 function bearingFromTo(a, b) {
@@ -166,31 +180,29 @@ function logMessage(text) {
   while (msgLog.children.length > 3) msgLog.lastChild.remove();
 }
 
-// Live navigation: rotate arrows and banner
+// Live navigation: banner points to destination, compass points home
 function updateNav() {
-  if (!heliLatLng) return; // relies on existing heliLatLng updates
-  const heli = L.latLng(heliLatLng);
-  const pizzaLL = Array.isArray(pizzaLatLng) ? L.latLng(pizzaLatLng[0], pizzaLatLng[1]) : L.latLng(pizzaLatLng);
-  const pizzaBrg = bearingFromTo(heli, pizzaLL);
-  pizzaArrow.style.transform = `rotate(${pizzaBrg}deg)`;
+  if (!heliLatLng) return;
 
+  // pizza arrow points back to pizzeria
+  const heli = L.latLng(heliLatLng);
+  const shop = L.latLng(pizzaLatLng[0], pizzaLatLng[1]);
+  const toShop = bearingFromTo(heli, shop);
+  pizzaArrow.style.transform = `rotate(${toShop}deg)`;
+
+  // banner arrow points to active destination
   const active = activeOrders[0];
   if (active && active.house) {
     const houseLL = active.house.getLatLng();
-    const houseBrg = bearingFromTo(heli, houseLL);
+    const toHouse = bearingFromTo(heli, houseLL);
     const dist = heli.distanceTo(houseLL);
-    houseArrow.style.opacity = '1';
-    houseArrow.style.transform = `rotate(${houseBrg}deg)`;
-    navBanner.style.display = 'block';
-    navBanner.textContent = `→ ${orders[active.idx].address} • ${formatDistance(dist)}`;
-    setTargetPulse(houseLL);
+    navArrow.style.transform = `rotate(${toHouse}deg)`;
+    navText.textContent = `${orders[active.idx].address} • ${formatDistance(dist)}`;
+    navBanner.style.display = 'flex';
   } else {
-    houseArrow.style.opacity = '0.25';
     navBanner.style.display = 'none';
-    setTargetPulse(null);
   }
 }
-// start lightweight nav updater
 setInterval(updateNav, 250);
 
 // Movement control variables
@@ -248,6 +260,15 @@ mapContainer.addEventListener('pointercancel', endTouch);
 // Phone ringing and order scheduling
 let phoneRinging = false;
 
+function startRingTone() {
+  if (!ringAudio) return;
+  try { ringAudio.volume = 0.6; ringAudio.currentTime = 0; ringAudio.play(); } catch {}
+}
+function stopRingTone() {
+  if (!ringAudio) return;
+  try { ringAudio.pause(); ringAudio.currentTime = 0; } catch {}
+}
+
 function ringPhone() {
   if (nextOrderIndex >= orders.length || phoneRinging || gameOver) return;
   phoneIcon.dataset.orderIndex = nextOrderIndex;
@@ -255,6 +276,7 @@ function ringPhone() {
   phoneIcon.classList.add('ringing');
   phoneRinging = true;
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  startRingTone();
   setTimeout(answerPhone, 1000);
 }
 
@@ -264,6 +286,7 @@ function answerPhone() {
   phoneIcon.classList.remove('ringing');
   phoneIcon.style.display = 'none';
   phoneRinging = false;
+  stopRingTone();
 
   const orderIdx = parseInt(phoneIcon.dataset.orderIndex, 10);
   startOrder(orderIdx);
@@ -495,6 +518,13 @@ function endGame(win) {
     // Ignore errors if audio element isn't available
   }
 }
+
+// Ensure ringtone stops when game ends
+const _endGame = endGame;
+endGame = function(win) {
+  stopRingTone();
+  return _endGame(win);
+};
 
 // Start the first phone ring 1 second after game start
 setTimeout(ringPhone, 1000);
