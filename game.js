@@ -249,11 +249,11 @@ function startOrder(idx) {
     const turtle = L.marker([lat, lng], { icon: turtleIcon }).addTo(map);
     turtleMarkers.push(turtle);
   });
-  // two coin pickups placed near the destination house
-  [[0.0003, 0], [0, 0.0003]].forEach(offset => {
-    const coinLat = destLat + offset[0];
-    const coinLng = destLng + offset[1];
-    const coin = L.marker([coinLat, coinLng], { icon: coinIcon }).addTo(map);
+  // scatter multiple coin pickups along the route (avoid clustering near house)
+  [0.2, 0.35, 0.5, 0.65, 0.8].forEach(f => {
+    const lat = shopLat + (destLat - shopLat) * f + (Math.random() * 0.0004 - 0.0002);
+    const lng = shopLng + (destLng - shopLng) * f + (Math.random() * 0.0004 - 0.0002);
+    const coin = L.marker([lat, lng], { icon: coinIcon }).addTo(map);
     coinMarkers.push(coin);
   });
 
