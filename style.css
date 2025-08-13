@@ -419,3 +419,62 @@ body {
   font-size: 140px;
   line-height: 1;
 }
+
+/* === Bottom dock: FORCE side-by-side, smaller, never stack === */
+#compass{
+  position: absolute;
+  left:  calc(env(safe-area-inset-left, 0px) + 10px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  z-index: 2000;
+  display: grid !important;              /* override old rules */
+  grid-template-columns: 1fr 1fr;        /* two equal columns */
+  gap: 6px;
+  align-items: center;
+}
+
+.compass-card{
+  min-width: 0;                          /* allow shrink */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 5px 8px;
+  background: rgba(0,0,0,.84);
+  border: 1px solid rgba(255,255,255,.55);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+#pizza-arrow, #dest-arrow{
+  width: 22px;
+  height: 16px;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+}
+
+#pizza-label, #dest-label{
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: "Hack", monospace;
+  font-size: clamp(11px, 3.2vw, 13px);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* hide destination cleanly when no active order */
+#dest-compass[hidden]{ display: none !important; }
+
+/* message log must clear dock height */
+#msg-log{
+  position: absolute;
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px + var(--dock-h, 44px));
+  width: min(92vw, 390px);
+  z-index: 2050;
+  pointer-events: none;
+}
+#msg-log .msg{ pointer-events: auto; }
+
