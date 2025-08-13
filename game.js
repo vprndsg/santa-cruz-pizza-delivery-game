@@ -108,7 +108,6 @@ const navBanner   = document.getElementById('nav-banner');
 const navText     = document.getElementById('nav-text');
 const navArrow    = document.getElementById('nav-arrow');
 const msgLog      = document.getElementById('msg-log');
-const compassEl   = document.getElementById('compass');
 const pizzaCompass= document.getElementById('pizza-compass');
 const pizzaArrow  = document.getElementById('pizza-arrow');
 const pizzaLabel  = document.getElementById('pizza-label');
@@ -129,11 +128,14 @@ window.addEventListener('load', () => { hud.style.display = 'block'; });
 
 // dock height drives message log offset
 function updateDockHeight(){
-  const h = compassEl ? compassEl.offsetHeight : 0;
+  const dock = document.getElementById('compass');
+  const h = dock ? dock.offsetHeight : 0;
   document.documentElement.style.setProperty('--dock-h', `${h + 10}px`);
 }
 window.addEventListener('load', updateDockHeight);
 window.addEventListener('resize', updateDockHeight);
+setInterval(updateDockHeight, 500);
+
 
 // tip bubble helpers
 let arrowTipTimer = null;
