@@ -115,6 +115,7 @@ const destCompass = document.getElementById('dest-compass');
 const destArrow   = document.getElementById('dest-arrow');
 const destLabel   = document.getElementById('dest-label');
 const arrowTip    = document.getElementById('arrow-tip');
+const compassEl   = document.getElementById('compass');
 const ringAudio   = document.getElementById('ring-audio');
 const soundToggle = document.getElementById('sound-toggle');
 const gameOverScreen  = document.getElementById('game-over');
@@ -126,15 +127,20 @@ if (tutorialMsg) tutorialMsg.style.display = 'block';
 // Ensure HUD visible when game starts
 window.addEventListener('load', () => { hud.style.display = 'block'; });
 
-// dock height drives message log offset
+// game.js — keep dock height in sync so the log never overlaps
 function updateDockHeight(){
-  const dock = document.getElementById('compass');
-  const h = dock ? dock.offsetHeight : 0;
+  const h = compassEl ? compassEl.offsetHeight : 0;
   document.documentElement.style.setProperty('--dock-h', `${h + 10}px`);
 }
-window.addEventListener('load', updateDockHeight);
-window.addEventListener('resize', updateDockHeight);
-setInterval(updateDockHeight, 500);
+window.addEventListener('load',  updateDockHeight);
+window.addEventListener('resize',updateDockHeight);
+setInterval(updateDockHeight, 500); // cheap guard
+
+// also react when the destination bar is shown/hidden
+if (destCompass){
+  new MutationObserver(updateDockHeight)
+    .observe(destCompass, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+}
 
 
 // tip bubble helpers
