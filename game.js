@@ -222,29 +222,25 @@ function setTargetPulse(latlng) {
   }
 }
 
+const SHOW_MSG_LOG = false;
+
 // Message helpers
 let phoneHideTimer = null;
-function showPhoneMessage(caller, emoji, text, showMs = 3500) {
+function showPhoneMessage(caller, emoji, text, showMs) {
+  const minMs = 6000;                     // linger more
+  const ms = Math.max(minMs, showMs ?? minMs);
+
   if (phoneHideTimer) { clearTimeout(phoneHideTimer); phoneHideTimer = null; }
   phoneMessage.innerHTML = `${emoji} <strong>${caller}:</strong> ${text}`;
   phoneMessage.classList.remove('slide-in');
-  void phoneMessage.offsetWidth;           // restart animation
+  void phoneMessage.offsetWidth;
   phoneMessage.classList.add('slide-in');
   phoneMessage.style.display = 'block';
-  logMessage(`${emoji} ${caller}: ${text}`);
-  phoneHideTimer = setTimeout(() => { phoneMessage.style.display = 'none'; }, showMs);
+  phoneHideTimer = setTimeout(() => { phoneMessage.style.display = 'none'; }, ms);
 }
-function logMessage(text){
-  if (!msgLog) return;
-  const el = document.createElement('div');
-  el.className = 'msg';
-  const t = new Date();
-  const hh = String(t.getHours()).padStart(2,'0');
-  const mm = String(t.getMinutes()).padStart(2,'0');
-  el.textContent = `[${hh}:${mm}] ${text}`;
-  msgLog.prepend(el);
-  const maxLog = window.matchMedia('(max-width: 640px)').matches ? 2 : 4;
-  while (msgLog.children.length > maxLog) msgLog.lastChild.remove();
+function logMessage(_) {
+  if (!SHOW_MSG_LOG) return;
+  // keep old body if you want to re-enable later
 }
 
 // keep HUD, phone, and banner from overlapping; update arrows
@@ -592,10 +588,21 @@ function gameLoop() {
 requestAnimationFrame(gameLoop);
 
 // HUD update to list deliveries and timers
+function pizzasNeededTotal() {
+  return activeOrders.reduce((sum, o) => {
+    const cfg = orders[o.idx] || {};
+    const need = Number(
+      (cfg.pizzasNeeded != null ? cfg.pizzasNeeded : cfg.pizzas) ?? 1
+    );
+    return sum + (isFinite(need) ? need : 1);
+  }, 0);
+}
+
 function updateHUD() {
   const lines = [
-    `Deliveries: ${deliveredCount}/${orders.length}`,
-    `Tips: ${tipScore}`
+    `<strong>Deliveries:</strong> ${deliveredCount}/${orders.length}`,
+    `<strong>Tips:</strong> ${tipScore}`,
+    `<strong>Pizzas needed:</strong> ${pizzasNeededTotal()}`
   ];
   activeOrders.forEach(o => {
     const cfg = orders[o.idx];
