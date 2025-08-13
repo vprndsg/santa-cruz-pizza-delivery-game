@@ -40,8 +40,7 @@ const batteryIcon = L.divIcon({ html: "🔋", className: "battery-icon", iconSiz
 const turtleIcon  = L.divIcon({ html: "🐢", className: "turtle-icon",  iconSize: [210, 210] });
 const coinIcon    = L.divIcon({ html: "💰", className: "coin-icon",   iconSize: [210, 210] });
 
-// Tap detection radii for pickup/delivery (icon half-size + buffer)
-const PIZZA_TAP_RADIUS = pizzaIcon.options.iconSize[0] / 2 + 10;
+// Tap detection radius for houses and shop (icon half-size + buffer)
 const HOUSE_TAP_RADIUS = houseIcon.options.iconSize[0] / 2 + 10;
 
 // Starting markers on the map
@@ -94,6 +93,7 @@ const heliTrail = [];
 const TAIL_SPACING = 10;  // spacing of tail markers behind heli
 
 // Game state tracking
+const MAX_PIZZAS = 5;        // hard cap
 let carryingCount = 0;
 let gameOver = false;
 let gamePaused = true;
@@ -145,18 +145,33 @@ if (destCompass){
 
 // tip bubble helpers
 let arrowTipTimer = null;
-function showArrowTip(text, ms = 3000){
+function showArrowTip(text, ms = 3000) {
   if (!arrowTip) return;
   arrowTip.textContent = text;
   arrowTip.style.display = 'block';
+  // raise dock above all overlays while tip is visible
+  if (compassEl) compassEl.classList.add('tip-active');
   if (arrowTipTimer) clearTimeout(arrowTipTimer);
-  arrowTipTimer = setTimeout(() => { arrowTip.style.display = 'none'; }, ms);
+  arrowTipTimer = setTimeout(hideArrowTip, ms);
 }
-function hideArrowTip(){
+function hideArrowTip() {
   if (!arrowTip) return;
   arrowTip.style.display = 'none';
-  if (arrowTipTimer) clearTimeout(arrowTipTimer);
-  arrowTipTimer = null;
+  if (compassEl) compassEl.classList.remove('tip-active');
+  if (arrowTipTimer) { clearTimeout(arrowTipTimer); arrowTipTimer = null; }
+}
+
+// Helper to refill pizzas and notify
+function restockAtShop() {
+  const was = carryingCount;
+  carryingCount = MAX_PIZZAS;
+  const gained = Math.max(0, carryingCount - was);
+  for (let i = 0; i < gained; i++) {
+    const tail = L.marker(helicopterMarker.getLatLng(), { icon: tailPizzaIcon }).addTo(map);
+    tailMarkers.push(tail);
+  }
+  showArrowTip(`Loaded ${carryingCount} pizzas${gained ? ` (+${gained})` : ''}. Ready to deliver.`, 2500);
+  updateHUD();
 }
 
 // audio unlock + fallback beeps
@@ -398,15 +413,12 @@ function startOrder(idx) {
     entry.timeLeft = cfg.time;
   }
 
-  (function checkCapacityForNewOrder(idx){
-    const cfg = orders[idx];
-    const missing = Math.max(0, cfg.pizzas - carryingCount);
-    if (missing > 0){
-      showArrowTip(`Need ${missing} more pizza${missing>1?'s':''}. Head back to the Pizzeria.`);
-    } else {
-      hideArrowTip();
-    }
-  })(idx);
+  const need = Math.max(0, cfg.pizzas - carryingCount);
+  if (need > 0) {
+    showArrowTip(`Need ${need} more pizza${need>1?'s':''}. Tap the Pizzeria to restock to ${MAX_PIZZAS}.`, 3500);
+  } else {
+    hideArrowTip();
+  }
 
   // place batteries, turtles, coins as you already do
   const [shopLat, shopLng] = pizzaLatLng;
@@ -457,17 +469,12 @@ function startOrder(idx) {
 // Pickup and delivery interactions
 map.on('click', (e) => {
   if (gameOver) return;
-  const here = helicopterMarker.getLatLng();
   const clickPoint = map.latLngToLayerPoint(e.latlng);
-
-  // Pizza pickup: tap near the pizzeria icon to load pizzas
   const pizzaPoint = map.latLngToLayerPoint(pizzaMarker.getLatLng());
-  if (clickPoint.distanceTo(pizzaPoint) <= PIZZA_TAP_RADIUS) {
-    if (carryingCount < 5) {
-      carryingCount++;
-      const tail = L.marker(here, { icon: tailPizzaIcon }).addTo(map);
-      tailMarkers.push(tail);
-    }
+
+  // One-tap restock at the pizzeria
+  if (clickPoint.distanceTo(pizzaPoint) <= HOUSE_TAP_RADIUS) {
+    restockAtShop();
     if (gamePaused) {
       gamePaused = false;
       if (tutorialMsg) tutorialMsg.style.display = 'none';
@@ -500,7 +507,7 @@ map.on('click', (e) => {
         }
       } else {
         const need = order.pizzasNeeded - carryingCount;
-        showArrowTip(`Need ${need} more pizza${need>1?'s':''}. Head back to the Pizzeria.`);
+        showArrowTip(`Need ${need} more pizza${need>1?'s':''}. Tap the Pizzeria to restock to ${MAX_PIZZAS}.`);
       }
     }
   }
