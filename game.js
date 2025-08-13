@@ -55,15 +55,15 @@ map.invalidateSize();
 
 // Orders and progress data
 const orders = [
-  { address: "121 Waugh Ave", pizzas: 2, time: 60,
+  { address: "Santa Cruz Gardens", pizzas: 2, time: 60,
     location: [37.00371, -121.97777],
     caller: "Mister Manager", emoji: "🐶",
     msg: "Woof woof! I need {p} pizzas now!" },
-  { address: "Santa Cruz Beach Boardwalk", pizzas: 1, time: 40,
+  { address: "Boardwalk", pizzas: 1, time: 40,
     location: [36.964287, -122.018822],
     caller: "Paige", emoji: "🎢",
     msg: "Mark! I need {p} pizza at the Boardwalk!" },
-  { address: "Santa Cruz Wharf", pizzas: 3, time: 80,
+  { address: "Wharf", pizzas: 3, time: 80,
     location: [36.9615, -122.0219],
     caller: "Otter 841", emoji: "🦦",
     msg: "Bro, I need {p} pizzas — ASAP!" },
@@ -71,7 +71,7 @@ const orders = [
     location: [37.00053, -122.06692],
     caller: "Stoner college kid", emoji: "🧑‍🎓",
     msg: "Dude, I’ve got the munchies—bring me {p} pizzas." },
-  { address: "Beauregard Vineyards Tasting Room", pizzas: 4, time: 80,
+  { address: "Bonny Doon", pizzas: 3, time: 80,
     location: [37.062073, -122.149203],
     caller: "JoBen", emoji: "🍷",
     msg: "Mark, get {p} pizzas here or you might not have a job tomorrow." }
