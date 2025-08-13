@@ -478,3 +478,10 @@ body {
 }
 #msg-log .msg{ pointer-events: auto; }
 
+/* When a guidance tip is visible, raise the whole dock above everything. */
+#compass.tip-active { z-index: 9999 !important; }
+/* Tip bubble itself sits on top of the dock and other overlays. */
+#arrow-tip { z-index: 10000 !important; pointer-events: none; }
+/* Keep the message log below the dock so it never covers the tip. */
+#msg-log { z-index: 8000 !important; }
+
