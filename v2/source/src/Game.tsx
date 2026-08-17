@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Point = { lat: number; lng: number };
 type Phase = "need_load" | "need_reload" | "cake" | "outbound";
-type Screen = "intro" | "title" | "briefing" | "playing" | "won" | "lost";
+type Screen = "intro" | "title" | "briefing" | "playing" | "victory_cutscene" | "won" | "lost";
 type Modifier = "clear" | "gulls" | "fog" | "signal" | "night";
 type LeafletApi = typeof import("leaflet");
 
@@ -282,6 +282,8 @@ export default function Home() {
   const [introError, setIntroError] = useState("");
   const [introStalled, setIntroStalled] = useState(false);
   const [briefingStalled, setBriefingStalled] = useState(false);
+  const [victoryNeedsTap, setVictoryNeedsTap] = useState(false);
+  const [victoryStalled, setVictoryStalled] = useState(false);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -298,8 +300,10 @@ export default function Home() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const briefingVideoRef = useRef<HTMLVideoElement>(null);
+  const victoryVideoRef = useRef<HTMLVideoElement>(null);
   const introStallTimerRef = useRef<number | null>(null);
   const briefingStallTimerRef = useRef<number | null>(null);
+  const victoryStallTimerRef = useRef<number | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const tileLayerRef = useRef<TileLayer | null>(null);
   const leafletRef = useRef<LeafletApi | null>(null);
@@ -582,7 +586,7 @@ export default function Home() {
           const score = g.tips + g.integrity * 200 + Math.max(0, 900 - Math.round(g.shiftElapsed));
           stopMusic(); setFinalScore(score);
           const nextBest = Math.max(bestScore, score); setBestScore(nextBest); localStorage.setItem("sc-pizza-2-best", String(nextBest));
-          setScreen("won"); return;
+          setScreen("victory_cutscene"); return;
         }
         g.phase = "need_load"; g.time = MISSIONS[g.mission].seconds;
         g.note = `DELIVERY CLEAN · +$${deliveryTip} · RETURN TO HQ`; g.noteUntil = now + 4200; g.callUntil = now + 6200;
@@ -839,6 +843,58 @@ export default function Home() {
     void video.play().catch(() => setBriefingStalled(true));
   }, []);
 
+  const finishVictoryCutscene = useCallback(() => {
+    if (victoryStallTimerRef.current) window.clearTimeout(victoryStallTimerRef.current);
+    victoryVideoRef.current?.pause();
+    setVictoryNeedsTap(false);
+    setVictoryStalled(false);
+    setScreen("won");
+  }, []);
+
+  const watchVictoryStall = useCallback(() => {
+    const video = victoryVideoRef.current;
+    if (!video || video.ended) return;
+    if (victoryStallTimerRef.current) window.clearTimeout(victoryStallTimerRef.current);
+    const checkpoint = video.currentTime;
+    victoryStallTimerRef.current = window.setTimeout(() => {
+      const current = victoryVideoRef.current;
+      if (current && !current.ended && current.currentTime <= checkpoint + .08) {
+        current.pause();
+        setVictoryStalled(true);
+      }
+    }, 1400);
+  }, []);
+
+  const clearVictoryStall = useCallback(() => {
+    if (victoryStallTimerRef.current) window.clearTimeout(victoryStallTimerRef.current);
+    setVictoryNeedsTap(false);
+    setVictoryStalled(false);
+  }, []);
+
+  const playVictoryCutscene = useCallback(() => {
+    const video = victoryVideoRef.current;
+    if (!video) return;
+    setVictoryNeedsTap(false);
+    setVictoryStalled(false);
+    void video.play().catch(() => setVictoryNeedsTap(true));
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "victory_cutscene") return;
+    const video = victoryVideoRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    video.muted = mutedRef.current;
+    video.volume = 1;
+    setVictoryNeedsTap(false);
+    setVictoryStalled(false);
+    void video.play().catch(() => setVictoryNeedsTap(true));
+    return () => {
+      if (victoryStallTimerRef.current) window.clearTimeout(victoryStallTimerRef.current);
+      video.pause();
+    };
+  }, [screen]);
+
   return (
     <main className="game-shell">
       {screen === "intro" && (
@@ -934,6 +990,16 @@ export default function Home() {
 
           <div className="game-tools"><button type="button" onClick={() => setMuted((value) => !value)} aria-label={muted ? "Turn sound on" : "Mute sound"}>{muted ? "🔇" : "🔊"}</button><button type="button" onClick={() => setPaused(true)} aria-label="Pause game">Ⅱ</button></div>
           {paused && <div className="pause-overlay"><div><p>SHIFT PAUSED</p><h2>The map will be here.</h2><button className="accept-button" type="button" onClick={() => setPaused(false)}>Resume flight</button></div></div>}
+        </section>
+      )}
+
+      {screen === "victory_cutscene" && (
+        <section className="victory-cutscene" aria-label="Birthday victory cutscene">
+          <video ref={victoryVideoRef} className="victory-video" src="assets/victory-cake-cutscene.mp4" poster="assets/birthday-pizza-cake.webp" playsInline preload="auto" onPlaying={clearVictoryStall} onWaiting={watchVictoryStall} onStalled={watchVictoryStall} onEnded={finishVictoryCutscene} onError={finishVictoryCutscene} aria-label="A character jumps out of Mark's birthday cake" />
+          <div className="victory-video-grade" aria-hidden="true" />
+          <div className="victory-video-label"><i /> FINAL DELIVERY COMPLETE</div>
+          {(victoryNeedsTap || victoryStalled) && <div className="video-recovery"><b>{victoryStalled ? "VIDEO PAUSED" : "VICTORY READY"}</b><span>{victoryStalled ? "Your phone paused the celebration." : "Tap to play the birthday finale with sound."}</span><button type="button" onClick={playVictoryCutscene}>▶ Play victory</button><button type="button" className="recovery-skip" onClick={finishVictoryCutscene}>Skip to score</button></div>}
+          <button className="victory-skip" type="button" onClick={finishVictoryCutscene}>Skip to score</button>
         </section>
       )}
 
