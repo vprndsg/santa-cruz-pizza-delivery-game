@@ -20,7 +20,7 @@ img { display: block; }
 
 /* INTRO CUTSCENE */
 .intro-screen { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: hidden; background: #020711; isolation: isolate; }
-.intro-backdrop { position: absolute; inset: -5%; z-index: -3; background: linear-gradient(rgba(3,9,17,.46),rgba(3,9,17,.7)), url('./title-bg-intro-match.png') center/cover; filter: blur(22px) saturate(.75); transform: scale(1.08); }
+.intro-backdrop { position: absolute; inset: -5%; z-index: -3; background: linear-gradient(rgba(3,9,17,.46),rgba(3,9,17,.7)), url('./title-bg-intro-match.webp') center/cover; filter: blur(22px) saturate(.75); transform: scale(1.08); }
 .intro-video { width: min(100vw,56.25vh); height: 100svh; object-fit: cover; background: #030912; box-shadow: 0 0 80px rgba(0,0,0,.8); image-rendering: auto; }
 .intro-grade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle,transparent 50%,rgba(0,0,0,.45)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
 .intro-start { position: absolute; z-index: 3; display: grid; justify-items: center; gap: 16px; }
@@ -32,11 +32,16 @@ img { display: block; }
 .intro-play:hover { background: var(--cream); transform: translateY(-2px); }
 .intro-skip { position: absolute; right: 18px; bottom: 18px; z-index: 4; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; background: rgba(3,9,17,.7); padding: 8px 12px; color: rgba(255,255,255,.82); cursor: pointer; font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(8px); }
 .intro-screen.is-playing .intro-video { animation: introReveal .55s ease-out both; }
+.video-recovery { position: absolute; z-index: 6; display: grid; min-width: min(82vw,310px); justify-items: center; gap: 8px; border: 2px solid var(--cream); border-radius: 12px; background: rgba(3,9,17,.94); padding: 16px; color: var(--cream); box-shadow: 0 12px 40px rgba(0,0,0,.6); text-align: center; backdrop-filter: blur(10px); }
+.video-recovery b { color: var(--yellow); font-size: 11px; letter-spacing: .12em; }
+.video-recovery span { color: #b9cadb; font-size: 9px; }
+.video-recovery button { width: 100%; border: 2px solid var(--ink); border-radius: 7px; background: var(--yellow); padding: 10px 12px; color: var(--ink); cursor: pointer; font-size: 10px; font-weight: 950; text-transform: uppercase; }
+.video-recovery .recovery-skip { border-color: rgba(255,255,255,.25); background: transparent; color: var(--cream); }
 
 /* TITLE */
 .title-screen { position: relative; display: grid; min-height: 100svh; isolation: isolate; overflow: hidden; padding: clamp(20px, 4vw, 52px); place-items: center; }
 .title-art, .title-vignette, .scanlines { position: absolute; inset: 0; pointer-events: none; }
-.title-art { z-index: -3; background-image: linear-gradient(180deg, rgba(5,18,31,.02), rgba(5,18,31,.08)), url('./title-bg-intro-match.png'); background-position: center; background-size: cover; transform: scale(1.025); animation: titleDrift 12s ease-in-out infinite alternate; }
+.title-art { z-index: -3; background-image: linear-gradient(180deg, rgba(5,18,31,.02), rgba(5,18,31,.08)), url('./title-bg-intro-match.webp'); background-position: center; background-size: cover; transform: scale(1.025); animation: titleDrift 12s ease-in-out infinite alternate; }
 .title-vignette { z-index: -2; background: linear-gradient(180deg, rgba(3,9,17,.73), rgba(3,9,17,.02) 31%, rgba(3,9,17,.03) 58%, rgba(3,9,17,.92)), radial-gradient(circle, transparent 46%, rgba(0,0,0,.5)); }
 .scanlines { z-index: 7; opacity: .22; mix-blend-mode: overlay; background: repeating-linear-gradient(180deg, transparent 0 3px, rgba(0,0,0,.25) 3px 4px); }
 .title-lockup { position: absolute; top: clamp(8px, 1.5vh, 18px); left: 50%; width: min(94vw, 1040px); transform: translateX(-50%); text-align: center; text-shadow: 0 3px 0 #07121f,0 8px 24px rgba(0,0,0,.72); }
@@ -69,6 +74,7 @@ h1 em { position: absolute; right: clamp(-18px,-2vw,-8px); bottom: clamp(-28px,-
 .boss-frame { position: relative; display: grid; min-height: 510px; place-items: center; overflow: hidden; border-right: 2px solid rgba(255,255,255,.17); background: radial-gradient(circle at 50% 35%,#153b5d,#06111d 70%); padding: 14px; }
 .boss-video { width: 100%; height: 100%; max-height: 520px; border: 3px solid var(--yellow); border-radius: 9px; background: #050b12; object-fit: contain; box-shadow: 0 0 0 4px #000, 0 16px 34px rgba(0,0,0,.5); image-rendering: pixelated; }
 .feed-label { position: absolute; right: 24px; bottom: 24px; border: 2px solid var(--ink); border-radius: 4px; background: var(--coral); padding: 5px 8px; color: #fff; font-size: 8px; font-weight: 950; letter-spacing: .07em; pointer-events: none; }
+.briefing-recovery { top: 50%; left: 50%; min-width: min(78%,280px); transform: translate(-50%,-50%); }
 .briefing-copy { padding: clamp(22px,4vw,48px); }
 .kicker { margin: 0 0 7px; color: var(--yellow); font-size: 11px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
 .briefing-copy h2 { margin: 0 0 18px; color: var(--cream); font-size: clamp(28px,4vw,48px); letter-spacing: -.07em; }
@@ -312,24 +318,42 @@ h1 em { position: absolute; right: clamp(-18px,-2vw,-8px); bottom: clamp(-28px,-
 @media (max-width: 520px) and (orientation: portrait) {
   .intro-video { width: 100vw; height: 100svh; }
 
+  /* Phone title: keep the whole lockup and primary action in one visual beat. */
+  .title-screen { display: flex; min-height: 100svh; flex-direction: column; justify-content: flex-start; padding: calc(14px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); }
+  .title-art { background-position: 57% center; animation: none; }
+  .title-vignette { background: linear-gradient(180deg,rgba(3,9,17,.7),rgba(3,9,17,.12) 34%,rgba(3,9,17,.28) 68%,rgba(3,9,17,.82)),radial-gradient(circle,transparent 55%,rgba(0,0,0,.34)); }
+  .title-lockup { position: relative; top: auto; left: auto; width: 100%; transform: none; }
+  .eyebrow { margin-bottom: 8px; font-size: 8px; letter-spacing: .16em; }
+  .title-brand-logo { width: 112px; margin-bottom: 5px; border-width: 2px; box-shadow: 3px 3px 0 var(--blue),5px 5px 0 var(--yellow); }
+  h1 span { font-size: 20px; }
+  h1 strong { font-size: clamp(34px,10.5vw,43px); text-shadow: 0 -3px 0 var(--yellow),4px 4px 0 var(--ink); }
+  h1 em { right: -15px; bottom: -18px; font-size: 38px; -webkit-text-stroke-width: 3px; }
+  .subtitle { max-width: 340px; margin: 9px auto 0; font-size: 8px; line-height: 1.35; }
+  .title-actions { position: relative; bottom: auto; left: auto; width: 100%; margin-top: clamp(36px,8svh,72px); transform: none; }
+  .start-button { width: 100%; min-width: 0; padding: 15px 18px; font-size: 16px; }
+  .control-hint { margin-top: 12px; font-size: 7px; line-height: 1.45; text-align: center; }
+  .title-badges { display: none; }
+  .replay-intro { top: calc(8px + env(safe-area-inset-top)); right: 8px; padding: 6px 8px; font-size: 7px; }
+
   /* Phone briefing: one contained screen, no page-length desktop card. */
-  .briefing-overlay { align-items: stretch; overflow: hidden; padding: 8px; }
-  .briefing-card { display: grid; width: 100%; height: calc(100svh - 16px); max-height: none; grid-template-rows: 43px minmax(0,1fr); border-width: 2px; border-radius: 14px; box-shadow: 0 0 0 4px #07121f; }
+  .briefing-overlay { align-items: center; overflow: hidden; padding: 8px; }
+  .briefing-card { display: grid; width: 100%; height: auto; max-height: calc(100svh - 16px); grid-template-rows: 43px minmax(0,1fr); border-width: 2px; border-radius: 14px; box-shadow: 0 0 0 4px #07121f; }
   .call-status { min-width: 0; overflow: hidden; padding: 7px 10px; font-size: 8px; letter-spacing: .06em; text-overflow: ellipsis; white-space: nowrap; }
   .call-status img { width: 40px; height: 26px; flex: 0 0 auto; }
-  .briefing-grid { min-height: 0; grid-template-rows: minmax(220px,43svh) minmax(0,1fr); }
+  .briefing-grid { min-height: 0; grid-template-rows: minmax(210px,40svh) auto; }
   .boss-frame { display: block; min-height: 0; max-height: none; border-bottom: 1px solid rgba(255,255,255,.17); padding: 8px; }
   /* Mobile Safari otherwise lets the portrait video's intrinsic height escape
      the grid track, pushing JoBen's face underneath the copy panel. */
   .boss-video { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); max-height: none; border-width: 2px; object-fit: contain; object-position: 50% 50%; }
   .feed-label { right: 15px; bottom: 14px; padding: 4px 6px; font-size: 6px; }
-  .briefing-copy { position: relative; z-index: 1; align-content: start; overflow: auto; padding: 15px 16px calc(15px + env(safe-area-inset-bottom)); background: #0b1c2a; }
+  .briefing-copy { position: relative; z-index: 1; align-content: start; overflow: auto; padding: 14px 16px calc(15px + env(safe-area-inset-bottom)); background: #0b1c2a; }
   .briefing-copy .kicker { margin-bottom: 5px; font-size: 8px; letter-spacing: .11em; }
   .briefing-copy h2 { margin: 0 0 8px; font-size: clamp(25px,8vw,34px); line-height: .98; }
   .briefing-copy > p:not(.kicker) { display: none; }
   .briefing-copy > p.mobile-briefing-summary { display: block; margin: 0; color: #c8d6df; font-size: 11px; line-height: 1.45; }
   .briefing-copy .objective-row { display: none; }
-  .briefing-copy .accept-button { margin-top: 13px; padding: 13px 14px; font-size: 12px; }
+  .briefing-copy .accept-button { margin-top: 12px; padding: 12px 14px; font-size: 12px; }
+  .briefing-recovery { min-width: min(76%,250px); padding: 12px; }
 
   /* Phone game: the map is the steering surface; the HUD only keeps live decisions. */
   .real-game { touch-action: none; user-select: none; }

@@ -282,6 +282,8 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("intro");
   const [introStarted, setIntroStarted] = useState(false);
   const [introError, setIntroError] = useState("");
+  const [introStalled, setIntroStalled] = useState(false);
+  const [briefingStalled, setBriefingStalled] = useState(false);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -297,6 +299,9 @@ export default function Home() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const introVideoRef = useRef<HTMLVideoElement>(null);
+  const briefingVideoRef = useRef<HTMLVideoElement>(null);
+  const introStallTimerRef = useRef<number | null>(null);
+  const briefingStallTimerRef = useRef<number | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const tileLayerRef = useRef<TileLayer | null>(null);
   const leafletRef = useRef<LeafletApi | null>(null);
@@ -753,6 +758,7 @@ export default function Home() {
     const video = introVideoRef.current;
     if (!video) return;
     setIntroError("");
+    setIntroStalled(false);
     setIntroStarted(true);
     video.currentTime = 0;
     void video.play().catch(() => {
@@ -762,8 +768,61 @@ export default function Home() {
   }, []);
 
   const finishIntro = useCallback(() => {
+    if (introStallTimerRef.current) window.clearTimeout(introStallTimerRef.current);
     introVideoRef.current?.pause();
     setScreen("title");
+  }, []);
+
+  const watchIntroStall = useCallback(() => {
+    const video = introVideoRef.current;
+    if (!video || video.ended) return;
+    if (introStallTimerRef.current) window.clearTimeout(introStallTimerRef.current);
+    const checkpoint = video.currentTime;
+    introStallTimerRef.current = window.setTimeout(() => {
+      const current = introVideoRef.current;
+      if (current && !current.ended && current.currentTime <= checkpoint + .08) {
+        current.pause();
+        setIntroStalled(true);
+      }
+    }, 1100);
+  }, []);
+
+  const clearIntroStall = useCallback(() => {
+    if (introStallTimerRef.current) window.clearTimeout(introStallTimerRef.current);
+    setIntroStalled(false);
+  }, []);
+
+  const resumeIntro = useCallback(() => {
+    const video = introVideoRef.current;
+    if (!video) return;
+    setIntroStalled(false);
+    void video.play().catch(() => setIntroStalled(true));
+  }, []);
+
+  const watchBriefingStall = useCallback(() => {
+    const video = briefingVideoRef.current;
+    if (!video || video.ended) return;
+    if (briefingStallTimerRef.current) window.clearTimeout(briefingStallTimerRef.current);
+    const checkpoint = video.currentTime;
+    briefingStallTimerRef.current = window.setTimeout(() => {
+      const current = briefingVideoRef.current;
+      if (current && !current.ended && current.currentTime <= checkpoint + .08) {
+        current.pause();
+        setBriefingStalled(true);
+      }
+    }, 1100);
+  }, []);
+
+  const clearBriefingStall = useCallback(() => {
+    if (briefingStallTimerRef.current) window.clearTimeout(briefingStallTimerRef.current);
+    setBriefingStalled(false);
+  }, []);
+
+  const resumeBriefing = useCallback(() => {
+    const video = briefingVideoRef.current;
+    if (!video) return;
+    setBriefingStalled(false);
+    void video.play().catch(() => setBriefingStalled(true));
   }, []);
 
   return (
@@ -771,9 +830,10 @@ export default function Home() {
       {screen === "intro" && (
         <section className={`intro-screen ${introStarted ? "is-playing" : ""}`} aria-label="Opening cutscene">
           <div className="intro-backdrop" aria-hidden="true" />
-          <video ref={introVideoRef} className="intro-video" src="assets/mark-intro-cutscene.mp4" playsInline preload="auto" onEnded={finishIntro} onError={() => { setIntroStarted(false); setIntroError("The cutscene did not load. Skip to the title or reload the page."); }} aria-label="Joby Pizza opening cutscene" />
+          <video ref={introVideoRef} className="intro-video" src="assets/mark-intro-cutscene.mp4" poster="assets/mark-intro-poster.webp" playsInline preload="metadata" onPlaying={clearIntroStall} onWaiting={watchIntroStall} onStalled={watchIntroStall} onEnded={finishIntro} onError={() => { setIntroStarted(false); setIntroError("The cutscene did not load. Skip to the title or reload the page."); }} aria-label="Joby Pizza opening cutscene" />
           <div className="intro-grade" aria-hidden="true" />
           {!introStarted && <div className="intro-start"><button className="intro-play" type="button" onClick={playIntro}><small>JOBY PIZZA PRESENTS</small><b>▶ PLAY INTRO</b><span>10 seconds · sound on</span></button>{introError && <p role="alert">{introError}</p>}</div>}
+          {introStarted && introStalled && <div className="video-recovery"><b>VIDEO PAUSED</b><span>Your phone stopped the stream.</span><button type="button" onClick={resumeIntro}>▶ Resume intro</button><button type="button" className="recovery-skip" onClick={finishIntro}>Skip to title</button></div>}
           <button className="intro-skip" type="button" onClick={finishIntro}>{introStarted ? "Skip cutscene" : "Skip to title"}</button>
         </section>
       )}
@@ -791,7 +851,7 @@ export default function Home() {
       {screen === "briefing" && (
         <section className="briefing-overlay" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
           <div className="briefing-card"><div className="call-status"><img src="assets/joby-wing-mark.webp" alt="" /><span className="live-dot" /> Incoming video · JoBen · Dispatch HQ</div><div className="briefing-grid">
-            <div className="boss-frame"><video className="boss-video" src="assets/joben-intro.mp4" poster="assets/joben-intro-poster.webp" autoPlay playsInline controls preload="metadata" aria-label="JoBen gives Mark the delivery briefing" /><span className="feed-label">LIVE JOBY DISPATCH // 10 SEC</span></div>
+            <div className="boss-frame"><video ref={briefingVideoRef} className="boss-video" src="assets/joben-intro.mp4" poster="assets/joben-intro-poster.webp" autoPlay playsInline controls preload="metadata" onLoadedData={() => { const video = briefingVideoRef.current; if (video && video.paused) void video.play().catch(() => setBriefingStalled(true)); }} onPlaying={clearBriefingStall} onWaiting={watchBriefingStall} onStalled={watchBriefingStall} onError={() => setBriefingStalled(true)} aria-label="JoBen gives Mark the delivery briefing" /><span className="feed-label">LIVE JOBY DISPATCH // 10 SEC</span>{briefingStalled && <div className="video-recovery briefing-recovery"><b>CALL PAUSED</b><button type="button" onClick={resumeBriefing}>▶ Resume JoBen</button></div>}</div>
             <div className="briefing-copy"><p className="kicker">Previously, at the worst delivery company in Santa Cruz</p><h2 id="briefing-title">JoBen promised a normal shift.</h2>
               <p>JoBen is lying. Five callers are already on the radio. The last order is marked <b>NOT A BIRTHDAY SURPRISE</b>, which is how you know it is absolutely a birthday surprise.</p>
               <p className="mobile-briefing-summary">Fly fast. Dodge gulls. Brake under 72 mph, enter the yellow zone and hold LAND.</p>
