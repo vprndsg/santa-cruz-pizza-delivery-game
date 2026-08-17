@@ -207,7 +207,8 @@ h1 em { position: absolute; right: clamp(-18px,-2vw,-8px); bottom: clamp(-28px,-
 .touch-stick > span { display: block; width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; background: var(--teal); box-shadow: 0 4px 0 var(--ink); transition: transform .06s linear; }
 .action-cluster { display: grid; width: 218px; gap: 7px; }
 .boost-control, .land-control { position: relative; overflow: hidden; border: 2px solid var(--ink); border-radius: 9px; color: var(--ink); box-shadow: 0 4px 0 var(--ink); cursor: pointer; text-transform: uppercase; }
-.boost-control { display: flex; justify-content: space-between; align-items: center; background: var(--teal); padding: 8px 10px; }
+.boost-control { display: flex; justify-content: space-between; align-items: center; background: var(--teal); padding: 8px 10px; touch-action: manipulation; }
+.boost-control:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .boost-control small, .land-control small { font-size: 7px; font-weight: 900; letter-spacing: .08em; }
 .boost-control b { font-size: 10px; }
 .boost-control:disabled { opacity: .46; cursor: not-allowed; filter: grayscale(.75); }

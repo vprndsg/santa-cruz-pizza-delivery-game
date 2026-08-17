@@ -490,7 +490,14 @@ export default function Home() {
   const activateBoost = useCallback(() => {
     const g = gameRef.current;
     if (!g || paused || g.boostCharges <= 0 || g.boostTime > 0 || g.energy <= 4) return;
-    g.boostCharges--; g.boostTime = 4; g.note = "BOOST ENGAGED"; g.noteUntil = performance.now() + 1600;
+    const speed = Math.hypot(g.eastVelocity, g.northVelocity);
+    const launchSpeed = Math.min(BOOST_SPEED, Math.max(speed, CRUISE_SPEED * 1.15));
+    const heading = g.heading * Math.PI / 180;
+    const eastDirection = speed > 1 ? g.eastVelocity / speed : Math.sin(heading);
+    const northDirection = speed > 1 ? g.northVelocity / speed : Math.cos(heading);
+    g.eastVelocity = eastDirection * launchSpeed;
+    g.northVelocity = northDirection * launchSpeed;
+    g.boostCharges--; g.boostTime = 4; g.note = "AFTERBURN ENGAGED · 850 MPH"; g.noteUntil = performance.now() + 1600;
     tone(659.25, .18, "sawtooth", .05);
   }, [paused, tone]);
 
@@ -624,7 +631,12 @@ export default function Home() {
         const weatherDrift = mission.modifier === "fog" && g.missionActive ? Math.sin(now / 900) * 2.7 : 0;
         g.eastVelocity += (eastInput * FLIGHT_ACCELERATION + weatherDrift) * dt;
         g.northVelocity += northInput * FLIGHT_ACCELERATION * dt;
-        const drag = Math.exp(-(inputMagnitude > .05 ? .48 : 1.75) * dt);
+        if (g.boostTime > 0) {
+          const boostHeading = g.heading * Math.PI / 180;
+          g.eastVelocity += Math.sin(boostHeading) * FLIGHT_ACCELERATION * 1.15 * dt;
+          g.northVelocity += Math.cos(boostHeading) * FLIGHT_ACCELERATION * 1.15 * dt;
+        }
+        const drag = Math.exp(-(g.boostTime > 0 ? .18 : inputMagnitude > .05 ? .48 : 1.75) * dt);
         g.eastVelocity *= drag; g.northVelocity *= drag;
       }
       const speed = Math.hypot(g.eastVelocity, g.northVelocity);
@@ -907,7 +919,7 @@ export default function Home() {
           <div className="flight-controls">
             <div className="touch-stick" onPointerDown={stickDown} onPointerMove={stickMove} onPointerUp={stickUp} onPointerCancel={stickUp} aria-label="Drag to steer"><span style={{ transform: `translate(${stickVisual.x}px, ${stickVisual.y}px)` }} /></div>
             <div className="action-cluster">
-              <button className="boost-control" type="button" onClick={activateBoost} disabled={!hud.boostCharges || hud.boostActive}><small>SPACE · 850 MPH</small><b>⚡ PIZZA AFTERBURN ×{hud.boostCharges}</b></button>
+              <button className="boost-control" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); activateBoost(); }} onClick={activateBoost} disabled={!hud.boostCharges || hud.boostActive}><small>SPACE · 850 MPH</small><b>⚡ PIZZA AFTERBURN ×{hud.boostCharges}</b></button>
               <button className={`land-control ${hud.readyToLand ? "ready" : ""}`} type="button" onPointerDown={() => { landHeldRef.current = true; }} onPointerUp={() => { landHeldRef.current = false; }} onPointerCancel={() => { landHeldRef.current = false; }} onPointerLeave={() => { landHeldRef.current = false; }} disabled={!hud.readyToLand}>
                 <span className="land-progress" style={{ transform: `scaleX(${hud.landingProgress})` }} /><small>{hud.readyToLand ? "HOLD E / HOLD BUTTON" : hud.distance > 90 ? "ENTER YELLOW ZONE" : "BRAKE BELOW 72 MPH"}</small><b>{hud.actionLabel}</b>
               </button>
