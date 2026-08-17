@@ -326,16 +326,15 @@ export default function Home() {
     speechTokenRef.current++; speechActiveRef.current = false;
     if (radioAudioRef.current) {
       radioAudioRef.current.pause();
-      radioAudioRef.current.removeAttribute("src");
-      radioAudioRef.current = null;
+      radioAudioRef.current.currentTime = 0;
     }
   }, []);
 
   const speakRadio = useCallback((speaker: string, text: string) => {
     if (mutedRef.current) return;
     const clip = radioAudioPath(speaker, text); if (!clip) return;
-    if (radioAudioRef.current) radioAudioRef.current.pause();
-    const audio = new Audio(clip.src);
+    const audio = radioAudioRef.current ?? new Audio();
+    audio.pause();
     const token = ++speechTokenRef.current;
     radioAudioRef.current = audio; audio.volume = .96; audio.preload = "auto";
     audio.onloadedmetadata = () => {
@@ -349,6 +348,12 @@ export default function Home() {
     const finish = () => { if (speechTokenRef.current === token) speechActiveRef.current = false; };
     audio.ontimeupdate = () => { if (audio.currentTime >= clip.start + clip.duration) { audio.pause(); finish(); } };
     audio.onended = finish; audio.onerror = finish;
+    if (audio.getAttribute("src") !== clip.src) {
+      audio.src = clip.src;
+      audio.load();
+    } else {
+      audio.currentTime = clip.start;
+    }
     void audio.play().catch(finish);
   }, []);
 
@@ -895,7 +900,10 @@ export default function Home() {
           </aside>
 
           <aside className={`navigation-card ${hud.signalLost ? "signal-lost" : ""}`}>
-            <div className="compass-ring"><span style={{ transform: `rotate(${hud.bearing}deg)` }}>▲</span></div>
+            <div className="compass-ring" aria-label={`Target bearing ${Math.round(hud.bearing)} degrees`}>
+              <i className="compass-north">N</i>
+              <span className="compass-arrow" style={{ transform: `rotate(${hud.bearing}deg)` }}><i /></span>
+            </div>
             <div><small>{hud.signalLost ? "SIGNAL LOST" : "NEXT TARGET"}</small><b>{hud.signalLost ? "REDWOODS BLOCKING NAV" : hud.targetLabel}</b><em>{hud.signalLost ? "Hold course" : `${formatDistance(hud.distance)} · ${Math.round(hud.speed)} mph`}</em></div>
           </aside>
 
