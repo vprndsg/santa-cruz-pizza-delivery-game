@@ -51,12 +51,12 @@ const MISSIONS = [
     thanks: "The pizza arrived before the concept of pizza. Five stars forever.",
   },
   {
-    place: "Bonny Doon Birthday Base", short: "Bonny Doon", caller: "JoBen", emoji: "🎂", pizzas: 3,
-    seconds: 135, position: { lat: 37.062073, lng: -122.149203 }, modifier: "night" as Modifier,
+    place: "Joby HQ · 333 Encinal St", short: "333 Encinal", caller: "JoBen", emoji: "🎂", pizzas: 3,
+    seconds: 90, position: { lat: 36.98659, lng: -122.03549 }, modifier: "night" as Modifier,
     portrait: "assets/job-en-boss.webp", episode: "THE BIRTHDAY PROTOCOL", headline: "JoBen has lied about the cargo",
-    message: "Small correction: this was never a normal shift. Load three pies, steal your own pizza-cake from the Boardwalk, then climb to Bonny Doon.",
+    message: "Small correction: this was never a normal shift. Load three pies, steal your own pizza-cake from the Boardwalk, then deliver everything to 333 Encinal Street.",
     banter: ["Surprise parties require secrecy, altitude and several labor violations.", "Everybody is waiting. Mister Manager has eaten one decorative balloon."],
-    thanks: "Quota met. Cake intact. Mark may now attend his own birthday.",
+    thanks: "Quota met. Cake intact. Welcome to Joby HQ. Mark may now attend his own birthday.",
   },
 ] as const;
 
@@ -77,7 +77,7 @@ function radioVoiceProfile(speaker: string) {
 }
 
 const RELOAD_RADIO_LINE = "I saw that. We will call it a tactical pizza exchange.";
-const CAKE_RADIO_LINE = "That cake is technically evidence. Get it to Bonny Doon before the candles become a wildfire permit.";
+const CAKE_RADIO_LINE = "That cake is technically evidence. Get it to 333 Encinal Street before the candles trigger an aerospace incident report.";
 const HAZARD_RADIO_LINES = {
   drone: "Mark, a rival delivery drone just tried to annex your cargo.",
   flock: "That was not a flock. That was an organized lunch crime.",
@@ -103,7 +103,8 @@ MISSIONS.forEach((mission, missionIndex) => {
     start += duration;
   });
 });
-RADIO_AUDIO.set(radioAudioKey("JoBen", CAKE_RADIO_LINE), { src: "assets/voices-sprite/m4.mp3", start: VOICE_DURATIONS[4].slice(0, 8).reduce((sum, duration) => sum + duration, 0), duration: VOICE_DURATIONS[4][8] });
+RADIO_AUDIO.set(radioAudioKey(MISSIONS[4].caller, MISSIONS[4].message), { src: "assets/voices-sprite/m4.mp3", start: VOICE_DURATIONS[4][0], duration: VOICE_DURATIONS[4][1] });
+RADIO_AUDIO.set(radioAudioKey("JoBen", CAKE_RADIO_LINE), { src: "assets/voices-sprite/m4.mp3", start: VOICE_DURATIONS[4][0] + VOICE_DURATIONS[4][1], duration: VOICE_DURATIONS[4][2] });
 
 function radioAudioPath(speaker: string, text: string) {
   return RADIO_AUDIO.get(radioAudioKey(speaker, text));
@@ -212,18 +213,31 @@ const freshState = (): GameState => ({
     { center: { lat: 36.9701, lng: -122.0242 }, lat: 36.9701, lng: -122.0242, radius: 105, angle: 0, angularSpeed: .62, kind: "gull", missions: [0, 1, 4], hitRadius: 62 },
     { center: { lat: 36.9672, lng: -122.0210 }, lat: 36.9672, lng: -122.0210, radius: 135, angle: 2.2, angularSpeed: -.55, kind: "flock", missions: [0, 1, 4], hitRadius: 82 },
     { center: { lat: 36.9648, lng: -122.0194 }, lat: 36.9648, lng: -122.0194, radius: 92, angle: 4.1, angularSpeed: .78, kind: "drone", missions: [0, 1, 4], hitRadius: 66 },
+    { center: { lat: 36.9726, lng: -122.0218 }, lat: 36.9726, lng: -122.0218, radius: 112, angle: 1.2, angularSpeed: -.69, kind: "drone", missions: [0], hitRadius: 66 },
+    { center: { lat: 36.9688, lng: -122.0228 }, lat: 36.9688, lng: -122.0228, radius: 86, angle: 4.8, angularSpeed: .96, kind: "gull", missions: [0], hitRadius: 60 },
     { center: { lat: 36.9619, lng: -122.0220 }, lat: 36.9619, lng: -122.0220, radius: 155, angle: 1.4, angularSpeed: -.72, kind: "flock", missions: [1], hitRadius: 84 },
     { center: { lat: 36.9631, lng: -122.0197 }, lat: 36.9631, lng: -122.0197, radius: 80, angle: 3.5, angularSpeed: 1.05, kind: "gull", missions: [1], hitRadius: 60 },
+    { center: { lat: 36.9623, lng: -122.0203 }, lat: 36.9623, lng: -122.0203, radius: 98, angle: 5.3, angularSpeed: -.82, kind: "drone", missions: [1], hitRadius: 66 },
+    { center: { lat: 36.9607, lng: -122.0232 }, lat: 36.9607, lng: -122.0232, radius: 74, angle: .6, angularSpeed: 1.08, kind: "gull", missions: [1], hitRadius: 60 },
     { center: { lat: 36.9820, lng: -122.0105 }, lat: 36.9820, lng: -122.0105, radius: 150, angle: .8, angularSpeed: -.48, kind: "drone", missions: [2], hitRadius: 68 },
     { center: { lat: 36.9918, lng: -121.9950 }, lat: 36.9918, lng: -121.9950, radius: 185, angle: 2.8, angularSpeed: .46, kind: "flock", missions: [2], hitRadius: 84 },
     { center: { lat: 37.0002, lng: -121.9798 }, lat: 37.0002, lng: -121.9798, radius: 115, angle: 5.1, angularSpeed: -.66, kind: "gull", missions: [2], hitRadius: 62 },
+    { center: { lat: 36.9785, lng: -122.0150 }, lat: 36.9785, lng: -122.0150, radius: 92, angle: 1.9, angularSpeed: .79, kind: "gull", missions: [2], hitRadius: 60 },
+    { center: { lat: 36.9870, lng: -122.0042 }, lat: 36.9870, lng: -122.0042, radius: 132, angle: 4.4, angularSpeed: -.63, kind: "drone", missions: [2], hitRadius: 66 },
+    { center: { lat: 36.9960, lng: -121.9870 }, lat: 36.9960, lng: -121.9870, radius: 142, angle: .4, angularSpeed: .58, kind: "flock", missions: [2], hitRadius: 82 },
     { center: { lat: 36.9838, lng: -122.0410 }, lat: 36.9838, lng: -122.0410, radius: 170, angle: .3, angularSpeed: .53, kind: "drone", missions: [3], hitRadius: 68 },
     { center: { lat: 36.9924, lng: -122.0554 }, lat: 36.9924, lng: -122.0554, radius: 130, angle: 2.1, angularSpeed: -.74, kind: "flock", missions: [3], hitRadius: 84 },
     { center: { lat: 36.9992, lng: -122.0654 }, lat: 36.9992, lng: -122.0654, radius: 92, angle: 4.6, angularSpeed: .92, kind: "gull", missions: [3], hitRadius: 62 },
-    { center: { lat: 36.9900, lng: -122.0520 }, lat: 36.9900, lng: -122.0520, radius: 210, angle: 1.7, angularSpeed: -.42, kind: "flock", missions: [4], hitRadius: 84 },
-    { center: { lat: 37.0170, lng: -122.0860 }, lat: 37.0170, lng: -122.0860, radius: 185, angle: 3.2, angularSpeed: .51, kind: "drone", missions: [4], hitRadius: 68 },
-    { center: { lat: 37.0410, lng: -122.1220 }, lat: 37.0410, lng: -122.1220, radius: 170, angle: 5.4, angularSpeed: -.58, kind: "flock", missions: [4], hitRadius: 86 },
-    { center: { lat: 37.0570, lng: -122.1450 }, lat: 37.0570, lng: -122.1450, radius: 105, angle: 2.5, angularSpeed: .82, kind: "gull", missions: [4], hitRadius: 62 },
+    { center: { lat: 36.9785, lng: -122.0350 }, lat: 36.9785, lng: -122.0350, radius: 96, angle: 3.4, angularSpeed: .83, kind: "gull", missions: [3], hitRadius: 60 },
+    { center: { lat: 36.9870, lng: -122.0500 }, lat: 36.9870, lng: -122.0500, radius: 138, angle: 5.2, angularSpeed: -.61, kind: "drone", missions: [3], hitRadius: 66 },
+    { center: { lat: 36.9960, lng: -122.0610 }, lat: 36.9960, lng: -122.0610, radius: 126, angle: 1.1, angularSpeed: .67, kind: "flock", missions: [3], hitRadius: 82 },
+    { center: { lat: 36.9682, lng: -122.0215 }, lat: 36.9682, lng: -122.0215, radius: 88, angle: 1.7, angularSpeed: -.92, kind: "drone", missions: [4], hitRadius: 66 },
+    { center: { lat: 36.9725, lng: -122.0247 }, lat: 36.9725, lng: -122.0247, radius: 118, angle: 3.2, angularSpeed: .74, kind: "flock", missions: [4], hitRadius: 82 },
+    { center: { lat: 36.9764, lng: -122.0276 }, lat: 36.9764, lng: -122.0276, radius: 78, angle: 5.4, angularSpeed: -1.02, kind: "gull", missions: [4], hitRadius: 60 },
+    { center: { lat: 36.9800, lng: -122.0302 }, lat: 36.9800, lng: -122.0302, radius: 104, angle: .3, angularSpeed: .86, kind: "drone", missions: [4], hitRadius: 66 },
+    { center: { lat: 36.9835, lng: -122.0327 }, lat: 36.9835, lng: -122.0327, radius: 126, angle: 2.8, angularSpeed: -.71, kind: "flock", missions: [4], hitRadius: 84 },
+    { center: { lat: 36.9860, lng: -122.0350 }, lat: 36.9860, lng: -122.0350, radius: 72, angle: 4.6, angularSpeed: 1.12, kind: "gull", missions: [4], hitRadius: 60 },
+    { center: { lat: 36.9788, lng: -122.0338 }, lat: 36.9788, lng: -122.0338, radius: 154, angle: 1.4, angularSpeed: -.56, kind: "drone", missions: [4], hitRadius: 68 },
   ],
   last: performance.now(), lastMap: 0,
 });
@@ -422,12 +436,22 @@ export default function Home() {
   const spawnPickups = useCallback((g: GameState, from: Point, to: Point) => {
     const L = leafletRef.current; const map = mapRef.current; if (!L || !map) return;
     clearPickups();
-    const specs: { fraction: number; lateral: number; kind: Pickup["kind"] }[] = [
-      { fraction: .18, lateral: -70, kind: "tip" }, { fraction: .32, lateral: 95, kind: "tip" },
-      { fraction: .46, lateral: -105, kind: "boost" }, { fraction: .6, lateral: 75, kind: "tip" },
-      { fraction: .69, lateral: 20, kind: "repair" }, { fraction: .78, lateral: -80, kind: "tip" },
-      { fraction: .88, lateral: 55, kind: "boost" },
+    const regularSpecs: { fraction: number; lateral: number; kind: Pickup["kind"] }[] = [
+      { fraction: .12, lateral: -55, kind: "tip" }, { fraction: .23, lateral: 72, kind: "boost" },
+      { fraction: .34, lateral: -88, kind: "tip" }, { fraction: .45, lateral: 38, kind: "repair" },
+      { fraction: .56, lateral: 92, kind: "tip" }, { fraction: .67, lateral: -64, kind: "boost" },
+      { fraction: .78, lateral: 48, kind: "tip" }, { fraction: .88, lateral: -42, kind: "repair" },
+      { fraction: .95, lateral: 22, kind: "tip" },
     ];
+    const finalMissionSpecs: typeof regularSpecs = [
+      { fraction: .08, lateral: -38, kind: "tip" }, { fraction: .16, lateral: 52, kind: "boost" },
+      { fraction: .24, lateral: -66, kind: "tip" }, { fraction: .32, lateral: 28, kind: "repair" },
+      { fraction: .4, lateral: 74, kind: "tip" }, { fraction: .48, lateral: -52, kind: "boost" },
+      { fraction: .56, lateral: 44, kind: "tip" }, { fraction: .64, lateral: -76, kind: "repair" },
+      { fraction: .72, lateral: 60, kind: "tip" }, { fraction: .8, lateral: -34, kind: "boost" },
+      { fraction: .88, lateral: 42, kind: "tip" }, { fraction: .95, lateral: -18, kind: "repair" },
+    ];
+    const specs = g.mission === MISSIONS.length - 1 ? finalMissionSpecs : regularSpecs;
     g.pickups = specs.map((spec) => ({ ...interpolateRoute(from, to, spec.fraction, spec.lateral), kind: spec.kind, active: true }));
     pickupMarkerRefs.current = g.pickups.map((pickup) => {
       const html = pickup.kind === "tip"
@@ -911,7 +935,7 @@ export default function Home() {
       {screen === "title" && (
         <section className="title-screen" aria-label="Santa Cruz Pizza Delivery 2 title screen">
           <div className="title-art" aria-hidden="true" /><div className="scanlines" aria-hidden="true" /><div className="title-vignette" aria-hidden="true" />
-          <header className="title-lockup"><p className="eyebrow">A <span>JOBY PIZZA</span> ORIGINAL GAME</p><img className="title-brand-logo" src="assets/joby-pizza-logo.webp" alt="Joby Pizza Delivery Services" /><h1><span>Santa Cruz</span><strong>Birthday Airlift</strong><em>II</em></h1><p className="subtitle">Five impossible pizzas. Fifteen airborne hazards. One suspicious cake.</p></header>
+          <header className="title-lockup"><p className="eyebrow">A <span>JOBY PIZZA</span> ORIGINAL GAME</p><img className="title-brand-logo" src="assets/joby-pizza-logo.webp" alt="Joby Pizza Delivery Services" /><h1><span>Santa Cruz</span><strong>Birthday Airlift</strong><em>II</em></h1><p className="subtitle">Five impossible pizzas. One crowded airspace. One suspicious cake.</p></header>
           <div className="title-actions"><button className="start-button" type="button" onClick={() => setScreen("briefing")}>Clock in, Mark</button><p className="control-hint">REAL SANTA CRUZ · 535 MPH ARCADE FLIGHT · FULL STORY CAMPAIGN</p></div>
           <div className="title-badges"><span>WASD / ARROWS TO FLY</span><span>E TO LAND</span><span>SPACE TO BOOST</span><span>AI VOICE CAST</span></div>
           <button className="replay-intro" type="button" onClick={() => { setIntroStarted(false); setScreen("intro"); }}>↺ Replay intro</button>
@@ -924,11 +948,11 @@ export default function Home() {
             <div className="boss-frame"><video ref={briefingVideoRef} className="boss-video" src="assets/joben-intro.mp4" poster="assets/joben-intro-poster.webp" autoPlay playsInline controls preload="metadata" onLoadedData={() => { const video = briefingVideoRef.current; if (video && video.paused) void video.play().catch(() => setBriefingStalled(true)); }} onPlaying={clearBriefingStall} onWaiting={watchBriefingStall} onStalled={watchBriefingStall} onError={() => setBriefingStalled(true)} aria-label="JoBen gives Mark the delivery briefing" /><span className="feed-label">LIVE JOBY DISPATCH // 10 SEC</span>{briefingStalled && <div className="video-recovery briefing-recovery"><b>CALL PAUSED</b><button type="button" onClick={resumeBriefing}>▶ Resume JoBen</button></div>}</div>
             <div className="briefing-copy"><p className="kicker">Previously, at the worst delivery company in Santa Cruz</p><h2 id="briefing-title">JoBen promised a normal shift.</h2>
               <p>JoBen is lying. Five callers are already on the radio. The last order is marked <b>NOT A BIRTHDAY SURPRISE</b>, which is how you know it is absolutely a birthday surprise.</p>
-              <p className="mobile-briefing-summary">Fly fast. Dodge gulls. Brake under 72 mph, enter the yellow zone and hold LAND.</p>
-              <div className="objective-row"><span>01</span><p><b>Fly like you stole it.</b> Cruise past 535 mph. Pizza Afterburn clears 850.</p></div>
-              <div className="objective-row"><span>02</span><p><b>Own the airspace.</b> Dodge gulls, organized gull mobs and rogue delivery drones.</p></div>
-              <div className="objective-row"><span>03</span><p><b>Bring the pizza home.</b> Brake below 72 mph, enter the yellow zone and hold LAND.</p></div>
-              <button className="accept-button" type="button" onClick={startGame}>Answer Paige’s call</button>
+              <p className="mobile-briefing-summary"><b>JOBY FIELD MANUAL:</b> Tap and hold anywhere toward where you want to fly; release to coast. Follow the yellow arrow. Tap AFTERBURN to boost. Brake below 72 MPH inside the yellow zone, then hold LAND. Gulls and drones cost one hull and three seconds. ♥ repairs, ⚡ recharges and $ pays tips.</p>
+              <div className="objective-row"><span>01</span><p><b>Point the aircraft.</b> On mobile, press and hold anywhere toward your destination; release to coast. Follow the yellow compass arrow.</p></div>
+              <div className="objective-row"><span>02</span><p><b>Use what the route gives you.</b> Tap AFTERBURN for speed. ♥ repairs hull, ⚡ restores boost and $ adds tips.</p></div>
+              <div className="objective-row"><span>03</span><p><b>Protect the cargo.</b> Gulls and drones cost one hull and three seconds. Brake below 72 MPH in the yellow zone, then hold LAND.</p></div>
+              <button className="accept-button" type="button" onClick={startGame}>Start game</button>
             </div>
           </div></div>
         </section>

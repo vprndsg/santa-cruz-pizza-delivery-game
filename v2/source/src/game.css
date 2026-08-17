@@ -370,7 +370,8 @@ h1 em { position: absolute; right: clamp(-18px,-2vw,-8px); bottom: clamp(-28px,-
   .briefing-copy .kicker { margin-bottom: 5px; font-size: 8px; letter-spacing: .11em; }
   .briefing-copy h2 { margin: 0 0 8px; font-size: clamp(25px,8vw,34px); line-height: .98; }
   .briefing-copy > p:not(.kicker) { display: none; }
-  .briefing-copy > p.mobile-briefing-summary { display: block; margin: 0; color: #c8d6df; font-size: 11px; line-height: 1.45; }
+  .briefing-copy > p.mobile-briefing-summary { display: block; margin: 0; color: #c8d6df; font-size: 9px; line-height: 1.42; }
+  .mobile-briefing-summary b { color: var(--yellow); letter-spacing: .06em; }
   .briefing-copy .objective-row { display: none; }
   .briefing-copy .accept-button { margin-top: 12px; padding: 12px 14px; font-size: 12px; }
   .briefing-recovery { min-width: min(76%,250px); padding: 12px; }
