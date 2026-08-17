@@ -109,7 +109,7 @@ function radioAudioPath(speaker: string, text: string) {
   return RADIO_AUDIO.get(radioAudioKey(speaker, text));
 }
 
-type Pickup = { lat: number; lng: number; kind: "tip" | "battery"; active: boolean };
+type Pickup = { lat: number; lng: number; kind: "tip" | "boost"; active: boolean };
 type HazardKind = "gull" | "flock" | "drone";
 type Hazard = {
   center: Point;
@@ -137,7 +137,6 @@ type GameState = {
   shiftElapsed: number;
   tips: number;
   integrity: number;
-  energy: number;
   combo: number;
   boostCharges: number;
   boostTime: number;
@@ -167,7 +166,6 @@ type Hud = {
   pizzas: number;
   tips: number;
   integrity: number;
-  energy: number;
   combo: number;
   boostCharges: number;
   boostActive: boolean;
@@ -192,7 +190,7 @@ type Hud = {
 
 const initialHud: Hud = {
   mission: 0, phase: "need_load", missionActive: false, time: MISSIONS[0].seconds, shiftElapsed: 0,
-  pizzas: 0, tips: 0, integrity: 3, energy: 100, combo: 0, boostCharges: 1,
+  pizzas: 0, tips: 0, integrity: 3, combo: 0, boostCharges: 1,
   boostActive: false, speed: 0, heading: 45, distance: 0, bearing: 0, targetLabel: "Pizza HQ · Front Street",
   actionLabel: "Hold to load", readyToLand: true, landingProgress: 0,
   note: "", noteVisible: false, callVisible: false,
@@ -204,7 +202,7 @@ const freshState = (): GameState => ({
   position: { ...PIZZA_HQ }, eastVelocity: 0, northVelocity: 0, heading: 45,
   mission: 0, phase: "need_load", resumePhase: "outbound", missionActive: false,
   pizzas: 0, time: MISSIONS[0].seconds, shiftElapsed: 0, tips: 0, integrity: 3,
-  energy: 100, combo: 0, boostCharges: 1, boostTime: 0, landingProgress: 0,
+  combo: 0, boostCharges: 1, boostTime: 0, landingProgress: 0,
   hitCooldown: 0, note: "Hold LAND at Pizza HQ to load Paige’s order.",
   noteUntil: performance.now() + 5000, callUntil: performance.now() + 6500,
   radioText: MISSIONS[0].message, radioSpeaker: MISSIONS[0].caller, radioAvatar: MISSIONS[0].portrait,
@@ -415,14 +413,14 @@ export default function Home() {
   const spawnPickups = useCallback((g: GameState, from: Point, to: Point) => {
     const L = leafletRef.current; const map = mapRef.current; if (!L || !map) return;
     clearPickups();
-    const specs: { fraction: number; lateral: number; kind: "tip" | "battery" }[] = [
+    const specs: { fraction: number; lateral: number; kind: "tip" | "boost" }[] = [
       { fraction: .18, lateral: -70, kind: "tip" }, { fraction: .32, lateral: 95, kind: "tip" },
-      { fraction: .46, lateral: -105, kind: "battery" }, { fraction: .6, lateral: 75, kind: "tip" },
-      { fraction: .74, lateral: -80, kind: "tip" }, { fraction: .86, lateral: 55, kind: "battery" },
+      { fraction: .46, lateral: -105, kind: "boost" }, { fraction: .6, lateral: 75, kind: "tip" },
+      { fraction: .74, lateral: -80, kind: "tip" }, { fraction: .86, lateral: 55, kind: "boost" },
     ];
     g.pickups = specs.map((spec) => ({ ...interpolateRoute(from, to, spec.fraction, spec.lateral), kind: spec.kind, active: true }));
     pickupMarkerRefs.current = g.pickups.map((pickup) => {
-      const html = pickup.kind === "tip" ? `<div class="map-pickup tip-pickup">$</div>` : `<div class="map-pickup battery-pickup">⚡</div>`;
+      const html = pickup.kind === "tip" ? `<div class="map-pickup tip-pickup">$</div>` : `<div class="map-pickup boost-pickup">⚡</div>`;
       const icon = L.divIcon({ className: "pickup-icon-shell", html, iconSize: [34, 34], iconAnchor: [17, 17] });
       return L.marker(pickup, { icon, interactive: false, zIndexOffset: 220 }).addTo(map);
     });
@@ -489,7 +487,7 @@ export default function Home() {
 
   const activateBoost = useCallback(() => {
     const g = gameRef.current;
-    if (!g || paused || g.boostCharges <= 0 || g.boostTime > 0 || g.energy <= 4) return;
+    if (!g || paused || g.boostCharges <= 0 || g.boostTime > 0) return;
     const speed = Math.hypot(g.eastVelocity, g.northVelocity);
     const launchSpeed = Math.min(BOOST_SPEED, Math.max(speed, CRUISE_SPEED * 1.15));
     const heading = g.heading * Math.PI / 180;
@@ -546,7 +544,7 @@ export default function Home() {
       const mission = MISSIONS[g.mission];
       g.landingProgress = 0;
       if (g.phase === "need_load") {
-        g.pizzas = mission.pizzas; g.energy = 100; g.missionActive = true; g.time = mission.seconds;
+        g.pizzas = mission.pizzas; g.missionActive = true; g.time = mission.seconds;
         g.phase = g.mission === MISSIONS.length - 1 ? "cake" : "outbound";
         g.note = `CARGO LOCKED · ${mission.pizzas} PIZZA${mission.pizzas > 1 ? "S" : ""} · GO GO GO`;
         g.noteUntil = now + 2600; g.callUntil = now + 5800; g.chapterUntil = now + 2500;
@@ -554,7 +552,7 @@ export default function Home() {
         g.banterStage = 0; g.legDistance = distanceMeters(g.position, currentTarget(g).point);
         spawnPickups(g, PIZZA_HQ, g.phase === "cake" ? CAKE_PICKUP : mission.position);
       } else if (g.phase === "need_reload") {
-        g.pizzas = mission.pizzas; g.energy = 100; g.phase = g.resumePhase;
+        g.pizzas = mission.pizzas; g.phase = g.resumePhase;
         g.note = "REPLACEMENT PIZZA LOCKED · THE CLOCK IS STILL RUDE"; g.noteUntil = now + 2600;
         g.radioText = RELOAD_RADIO_LINE; g.radioSpeaker = mission.caller; g.radioAvatar = mission.portrait; g.callUntil = now + 4400;
         g.banterStage = 0; g.legDistance = distanceMeters(g.position, currentTarget(g).point);
@@ -655,11 +653,6 @@ export default function Home() {
       g.position = offsetPoint(g.position, g.eastVelocity * dt, g.northVelocity * dt);
       g.position.lat = clamp(g.position.lat, 36.925, 37.09); g.position.lng = clamp(g.position.lng, -122.19, -121.94);
 
-      if (actualSpeed > 1) {
-        g.energy -= (0.055 + actualSpeed / CRUISE_SPEED * .12 + (g.boostTime > 0 ? .13 : 0)) * dt * (devAuto ? .12 : 1);
-        if (g.energy <= 0) { finishWithLoss(g.tips, "BATTERY EMPTY · EMERGENCY LANDING"); return; }
-      }
-
       g.gulls.forEach((gull, index) => {
         const hazardActive = g.missionActive && (g.phase === "outbound" || g.phase === "cake") && gull.missions.includes(g.mission);
         gull.angle += gull.angularSpeed * dt;
@@ -668,11 +661,8 @@ export default function Home() {
         const marker = gullMarkerRefs.current[index]; if (marker) { marker.setLatLng(gull); marker.setOpacity(hazardActive ? 1 : 0); }
         if (hazardActive && !devAuto && g.hitCooldown <= 0 && distanceMeters(g.position, gull) < gull.hitRadius) {
           const threat = gull.kind === "drone" ? "ROGUE DRONE" : gull.kind === "flock" ? "GULL MOB" : "GULL";
-          g.hitCooldown = 2.4; g.integrity--; g.time = Math.max(1, g.time - 7); g.combo = 0;
-          if (g.pizzas > 0) {
-            g.pizzas--; g.resumePhase = g.phase === "cake" ? "cake" : "outbound"; g.phase = "need_reload";
-            g.note = `${threat} STRIKE · PIZZA LOST · RETURN TO HQ · −7 SEC`; refreshTarget(g);
-          } else g.note = `${threat} STRIKE · −7 SEC`;
+          g.hitCooldown = 2.4; g.integrity--; g.time = Math.max(1, g.time - 3); g.combo = 0;
+          g.note = `${threat} STRIKE · −3 SEC · CARGO SECURE`;
           g.radioText = HAZARD_RADIO_LINES[gull.kind];
           g.radioSpeaker = mission.caller; g.radioAvatar = mission.portrait; g.callUntil = now + 4200;
           g.noteUntil = now + 4200; tone(116, .24, "sawtooth", .07);
@@ -684,7 +674,7 @@ export default function Home() {
         if (!pickup.active || distanceMeters(g.position, pickup) >= 34) return;
         pickup.active = false; pickupMarkerRefs.current[index]?.remove();
         if (pickup.kind === "tip") { g.tips += 25; g.note = "+$25 ROUTE TIP"; tone(880, .07); }
-        else { g.energy = Math.min(100, g.energy + 18); g.boostCharges = Math.min(3, g.boostCharges + 1); g.note = "BATTERY +18 · BOOST CHARGE"; tone(440, .07); setTimeout(() => tone(660, .09), 70); }
+        else { g.boostCharges = Math.min(3, g.boostCharges + 1); g.note = "AFTERBURN CHARGE +1"; tone(440, .07); setTimeout(() => tone(660, .09), 70); }
         g.noteUntil = now + 1500;
       });
 
@@ -702,7 +692,7 @@ export default function Home() {
         const signalLost = mission.modifier === "signal" && g.missionActive && Math.floor(now / 2200) % 5 === 0;
         setHud({
           mission: g.mission, phase: g.phase, missionActive: g.missionActive, time: g.time, shiftElapsed: g.shiftElapsed,
-          pizzas: g.pizzas, tips: g.tips, integrity: g.integrity, energy: Math.max(0, g.energy),
+          pizzas: g.pizzas, tips: g.tips, integrity: g.integrity,
           combo: g.combo, boostCharges: g.boostCharges, boostActive: g.boostTime > 0,
           speed: actualSpeed * 2.237, heading: g.heading, distance: liveDistance, bearing: bearingDegrees(g.position, liveTarget.point),
           targetLabel: liveTarget.label, actionLabel, readyToLand, landingProgress: g.landingProgress / 1.2,
@@ -899,7 +889,6 @@ export default function Home() {
           <aside className="flight-stats">
             <img className="hud-brand-mark" src="assets/joby-wing-mark.webp" alt="Joby Pizza" />
             <div><small>AIRFRAME</small><b>{[0,1,2].map((n) => <i key={n} className={n < hud.integrity ? "full" : ""}>◆</i>)}</b></div>
-            <div><small>BATTERY</small><span className="energy-track"><i style={{ width: `${hud.energy}%` }} /></span><b>{Math.round(hud.energy)}%</b></div>
             <div><small>CARGO</small><b>{hud.pizzas ? "🍕".repeat(hud.pizzas) : "EMPTY"}</b></div>
             <div><small>TIPS</small><b>${hud.tips}</b></div>
             <div><small>STREAK</small><b>×{Math.max(1, hud.combo + 1)}</b></div><div><small>SHIFT</small><b>{formatTime(hud.shiftElapsed)}</b></div>
