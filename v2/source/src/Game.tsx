@@ -109,7 +109,7 @@ function radioAudioPath(speaker: string, text: string) {
   return RADIO_AUDIO.get(radioAudioKey(speaker, text));
 }
 
-type Pickup = { lat: number; lng: number; kind: "tip" | "boost"; active: boolean };
+type Pickup = { lat: number; lng: number; kind: "tip" | "boost" | "repair"; active: boolean };
 type HazardKind = "gull" | "flock" | "drone";
 type Hazard = {
   center: Point;
@@ -418,14 +418,19 @@ export default function Home() {
   const spawnPickups = useCallback((g: GameState, from: Point, to: Point) => {
     const L = leafletRef.current; const map = mapRef.current; if (!L || !map) return;
     clearPickups();
-    const specs: { fraction: number; lateral: number; kind: "tip" | "boost" }[] = [
+    const specs: { fraction: number; lateral: number; kind: Pickup["kind"] }[] = [
       { fraction: .18, lateral: -70, kind: "tip" }, { fraction: .32, lateral: 95, kind: "tip" },
       { fraction: .46, lateral: -105, kind: "boost" }, { fraction: .6, lateral: 75, kind: "tip" },
-      { fraction: .74, lateral: -80, kind: "tip" }, { fraction: .86, lateral: 55, kind: "boost" },
+      { fraction: .69, lateral: 20, kind: "repair" }, { fraction: .78, lateral: -80, kind: "tip" },
+      { fraction: .88, lateral: 55, kind: "boost" },
     ];
     g.pickups = specs.map((spec) => ({ ...interpolateRoute(from, to, spec.fraction, spec.lateral), kind: spec.kind, active: true }));
     pickupMarkerRefs.current = g.pickups.map((pickup) => {
-      const html = pickup.kind === "tip" ? `<div class="map-pickup tip-pickup">$</div>` : `<div class="map-pickup boost-pickup">⚡</div>`;
+      const html = pickup.kind === "tip"
+        ? `<div class="map-pickup tip-pickup">$</div>`
+        : pickup.kind === "boost"
+          ? `<div class="map-pickup boost-pickup">⚡</div>`
+          : `<div class="map-pickup repair-pickup">♥</div>`;
       const icon = L.divIcon({ className: "pickup-icon-shell", html, iconSize: [34, 34], iconAnchor: [17, 17] });
       return L.marker(pickup, { icon, interactive: false, zIndexOffset: 220 }).addTo(map);
     });
@@ -667,7 +672,7 @@ export default function Home() {
         if (hazardActive && !devAuto && g.hitCooldown <= 0 && distanceMeters(g.position, gull) < gull.hitRadius) {
           const threat = gull.kind === "drone" ? "ROGUE DRONE" : gull.kind === "flock" ? "GULL MOB" : "GULL";
           g.hitCooldown = 2.4; g.integrity--; g.time = Math.max(1, g.time - 3); g.combo = 0;
-          g.note = `${threat} STRIKE · −3 SEC · CARGO SECURE`;
+          g.note = `${threat} STRIKE · −3 SEC · CARGO SECURE${g.integrity === 1 ? " · HULL CRITICAL" : ""}`;
           g.radioText = HAZARD_RADIO_LINES[gull.kind];
           g.radioSpeaker = mission.caller; g.radioAvatar = mission.portrait; g.callUntil = now + 4200;
           g.noteUntil = now + 4200; tone(116, .24, "sawtooth", .07);
@@ -679,7 +684,9 @@ export default function Home() {
         if (!pickup.active || distanceMeters(g.position, pickup) >= 34) return;
         pickup.active = false; pickupMarkerRefs.current[index]?.remove();
         if (pickup.kind === "tip") { g.tips += 25; g.note = "+$25 ROUTE TIP"; tone(880, .07); }
-        else { g.boostCharges = Math.min(3, g.boostCharges + 1); g.note = "AFTERBURN CHARGE +1"; tone(440, .07); setTimeout(() => tone(660, .09), 70); }
+        else if (pickup.kind === "boost") { g.boostCharges = Math.min(3, g.boostCharges + 1); g.note = "AFTERBURN CHARGE +1"; tone(440, .07); setTimeout(() => tone(660, .09), 70); }
+        else if (g.integrity < 3) { g.integrity++; g.note = "AIRFRAME REPAIRED · +1 HULL"; tone(523.25, .08); setTimeout(() => tone(783.99, .12), 80); }
+        else { g.tips += 10; g.note = "HULL FULL · +$10 SALVAGE TIP"; tone(740, .08); }
         g.noteUntil = now + 1500;
       });
 
@@ -893,7 +900,9 @@ export default function Home() {
 
           <aside className="flight-stats">
             <img className="hud-brand-mark" src="assets/joby-wing-mark.webp" alt="Joby Pizza" />
-            <div><small>AIRFRAME</small><b>{[0,1,2].map((n) => <i key={n} className={n < hud.integrity ? "full" : ""}>◆</i>)}</b></div>
+            <div className={`hull-stat ${hud.integrity === 1 ? "critical" : ""}`}><small>AIRFRAME</small><b className="hull-meter" aria-label={`${hud.integrity} of 3 hull points`}>
+              {[0,1,2].map((n) => <i key={n} className={n < hud.integrity ? "full" : ""} />)}<em>{hud.integrity}/3</em>
+            </b></div>
             <div><small>CARGO</small><b>{hud.pizzas ? "🍕".repeat(hud.pizzas) : "EMPTY"}</b></div>
             <div><small>TIPS</small><b>${hud.tips}</b></div>
             <div><small>STREAK</small><b>×{Math.max(1, hud.combo + 1)}</b></div><div><small>SHIFT</small><b>{formatTime(hud.shiftElapsed)}</b></div>
