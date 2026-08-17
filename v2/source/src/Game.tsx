@@ -467,6 +467,7 @@ export default function Home() {
   useEffect(() => {
     if (screen !== "playing" || !mapContainerRef.current) return;
     let disposed = false;
+    let tileFallbackTimer: number | null = null;
     setTileStatus("loading"); setMapReady(false);
     void import("leaflet").then((module) => {
       if (disposed || !mapContainerRef.current) return;
@@ -481,12 +482,39 @@ export default function Home() {
       });
       mapRef.current = map;
       const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19, keepBuffer: 6, updateWhenIdle: false, crossOrigin: true,
+        maxZoom: 19, keepBuffer: 6, updateWhenIdle: false,
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
       tileLayerRef.current = tiles;
-      tiles.once("load", () => !disposed && setTileStatus("ready"));
-      tiles.on("tileerror", () => !disposed && setTileStatus("error"));
+      let receivedTile = false;
+      let fallbackActive = false;
+      const markTilesReady = () => {
+        if (disposed) return;
+        receivedTile = true;
+        if (tileFallbackTimer) window.clearTimeout(tileFallbackTimer);
+        setTileStatus("ready");
+      };
+      const useFallbackTiles = () => {
+        if (disposed || receivedTile || fallbackActive) return;
+        fallbackActive = true;
+        if (map.hasLayer(tiles)) map.removeLayer(tiles);
+        const fallbackTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+          subdomains: "abcd", maxZoom: 20, keepBuffer: 6, updateWhenIdle: false,
+          attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        }).addTo(map);
+        tileLayerRef.current = fallbackTiles;
+        let fallbackErrors = 0;
+        fallbackTiles.once("tileload", markTilesReady);
+        fallbackTiles.once("load", markTilesReady);
+        fallbackTiles.on("tileerror", () => {
+          fallbackErrors++;
+          if (!disposed && !receivedTile && fallbackErrors >= 3) setTileStatus("error");
+        });
+      };
+      tiles.once("tileload", markTilesReady);
+      tiles.once("load", markTilesReady);
+      tiles.once("tileerror", useFallbackTiles);
+      tileFallbackTimer = window.setTimeout(useFallbackTiles, 2400);
 
       const hqIcon = L.divIcon({ className: "hq-icon-shell", html: `<div class="hq-pin"><img src="assets/joby-wing-mark.webp" alt="" /><b>JOBY PIZZA HQ</b></div>`, iconSize: [98, 72], iconAnchor: [49, 36] });
       L.marker(PIZZA_HQ, { icon: hqIcon, interactive: false, zIndexOffset: 200 }).addTo(map);
@@ -506,6 +534,7 @@ export default function Home() {
     });
     return () => {
       disposed = true; setMapReady(false);
+      if (tileFallbackTimer) window.clearTimeout(tileFallbackTimer);
       clearPickups(); gullMarkerRefs.current = [];
       targetMarkerRef.current = null; targetCircleRef.current = null;
       if (mapRef.current) mapRef.current.remove();
